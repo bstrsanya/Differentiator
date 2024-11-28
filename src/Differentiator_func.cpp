@@ -101,76 +101,6 @@ void Print (Node_t* node)
     printf (")");
 }
 
-Node_t* ReadDataBase ()
-{
-    size_t size = 0;
-    FILE* file = fopen ("primer.txt", "r");
-    char* str = ReadFile (file, &size);
-    fclose (file);
-
-    stack_t stk = {};
-    StackCtor (&stk, 10);
-
-    while (str[0]) // != EOF
-    {
-        SkipProb (&str);
-        if (str[0] == '(')
-        {
-            str += 1;
-            SkipProb (&str);
-
-            int n = 0;
-            if (str[0] >= 48 && str[0] <= 57)
-            {
-                double num = 0;
-                sscanf (str, "%lf%n", &num, &n);
-                Node_t* ad = CreateNode (NUM, num, NULL, NULL);
-                StackPush (&stk, ad);
-                str += n;
-            }
-            else
-            {
-                int cmd = 0;
-                if ((int) str[0] == '+') cmd = '+';
-                if ((int) str[0] == '-') cmd = '-';
-                if ((int) str[0] == '*') cmd = '*';
-                if ((int) str[0] == '/') cmd = '/';
-                str += 1;
-                Node_t* ad = CreateNode (OP, cmd, NULL, NULL);
-                StackPush (&stk, ad);
-            }
-        }
-        if (str[0] == ')')
-        {
-            str += 1;
-            Node_t* sun = NULL;
-            StackPop (&stk, &sun);
-
-            if (stk.size != 0) 
-            {
-                Node_t* parent = NULL;
-                StackPop (&stk, &parent);
-
-                if (!parent->left)
-                    parent->left = sun;
-                else
-                    parent->right = sun;
-
-                StackPush (&stk, parent); 
-            }  
-            else 
-            {
-                StackPush (&stk, sun);
-            }          
-        }
-    }
-    
-    Node_t* node = (Node_t*) calloc (1, sizeof (Node_t));
-    StackPop (&stk, &node);
-    FreeStack (&stk);
-    return node;
-}
-
 void SkipProb (char** str)
 {
     int n = 0;
@@ -178,7 +108,7 @@ void SkipProb (char** str)
     *str += n;
 }
 
-#define DEF_CMD(name, num, code) \
+#define DEF_CMD(name, str, num, code) \
     case name: code break;
 
 void Calculation (Node_t* node, stack_t* stk)
@@ -191,12 +121,7 @@ void Calculation (Node_t* node, stack_t* stk)
     if (node->type == NUM) StackPush (stk, node);
     if (node->type == OP)
     {
-        int cmd = 0;
-        if ((int) node->value == '+') cmd = 101;
-        if ((int) node->value == '-') cmd = 102;
-        if ((int) node->value == '*') cmd = 103;
-        if ((int) node->value == '/') cmd = 104;
-        switch (cmd)
+        switch ((int) node->value)
         {
             #include "commands.h"
 
@@ -208,3 +133,74 @@ void Calculation (Node_t* node, stack_t* stk)
 }
 
 #undef DEF_CMD
+
+int p = 0;
+const char* s = "25*10*(3*(25-10*2)+1)$";
+
+Node_t* GetG ()
+{
+    Node_t* value = GetE ();
+    if (s[p] != '$')
+        assert (0);
+    p++;
+    return value;
+}
+
+Node_t* GetN ()
+{
+    int value = 0;
+    while (('0' <= s[p]) && (s[p] <= '9'))
+    {
+        value = value * 10 + s[p] - '0';
+        p++;
+    }
+
+    return CreateNode (NUM, value, NULL, NULL);
+}
+
+Node_t* GetE ()
+{
+    Node_t* value = GetT ();
+    while (s[p] == '+' || s[p] == '-')
+    {
+        int op = s[p];
+        p++;
+        Node_t* value2 = GetT();
+        if (op == '+')
+            value = CreateNode (OP, 43, value, value2);
+        else
+            value = CreateNode (OP, 45, value, value2);
+    }
+    return value;
+}
+
+Node_t* GetT ()
+{
+    Node_t* value = GetP ();
+    while (s[p] == '*' || s[p] == '/')
+    {
+        int op = s[p];
+        p++;
+        Node_t* value2 = GetP();
+        if (op == '*')
+            value = CreateNode (OP, 42, value, value2);
+        else
+            value = CreateNode (OP, 47, value, value2);
+    }
+    return value;
+}
+
+Node_t* GetP ()
+{
+    if (s[p] == '(')
+    {
+        p++;
+        Node_t* value = GetE ();
+        if (s[p] != ')')
+            assert (0);
+        p++;
+        return value;
+    }
+    else
+        return GetN ();
+}

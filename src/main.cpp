@@ -1,24 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "Differentiator_func.h"
 
 int main ()
 {
-    Node_t* node = ReadDataBase ();
-
-    PrintDot (node);
-    
-    // Print (node);
-    // putchar ('\n');
+    Node_t* value = GetG ();
+    PrintDot (value);
 
     stack_t stk = {};
     StackCtor (&stk, 10);
-    Calculation (node, &stk);
-    Node_t* a = NULL;
-    StackPop (&stk, &a);
-    printf ("res = %lf\n", a->value);
+    Calculation (value, &stk);
+    Node_t* res = NULL;
+    StackPop (&stk, &res);
+    printf ("res = %lf\n", res->value);
+
     FreeStack (&stk);
 
-    NodeDtor (node);
+    NodeDtor (value);
 }
