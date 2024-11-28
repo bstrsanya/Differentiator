@@ -6,7 +6,7 @@
 
 int main ()
 {
-    Node_t* value = GetG ();
+    Node_t* value = ReadDataBase ();
     PrintDot (value);
 
     stack_t stk = {};

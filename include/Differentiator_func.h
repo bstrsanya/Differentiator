@@ -22,6 +22,13 @@ enum operation
 
 #undef DEF_CMD
 
+struct file_t
+{
+    int p;
+    char* s;
+};
+
+
 Node_t* CreateNode (int type, double value, Node_t* left, Node_t* right);
 void NodeDtor (Node_t* node);
 void CreateDot (Node_t* node, FILE* file_dot);
@@ -30,12 +37,13 @@ void Print (Node_t* node);
 void Calculation (Node_t* node, stack_t* stk);
 void SkipProb (char** str);
 void CreateDotUSER (Node_t* node, FILE* file_dot);
+Node_t* ReadDataBase ();
 
 
-Node_t* GetG ();
-Node_t* GetN ();
-Node_t* GetE ();
-Node_t* GetT ();
-Node_t* GetP ();
+Node_t* GetG (file_t* stk);
+Node_t* GetN (file_t* stk);
+Node_t* GetE (file_t* stk);
+Node_t* GetT (file_t* stk);
+Node_t* GetP (file_t* stk);
 
 #endif
