@@ -9,14 +9,11 @@ int main ()
     Node_t* value = ReadDataBase ();
     PrintDot (value);
 
-    stack_t stk = {};
-    StackCtor (&stk, 10);
-    Calculation (value, &stk);
-    Node_t* res = NULL;
-    StackPop (&stk, &res);
-    printf ("res = %lf\n", res->value);
+    Node_t* diff = Diff (value);
+    PrintDot (diff);
+    // Print (diff);
 
-    FreeStack (&stk);
+    NodeDtor (diff);
 
     NodeDtor (value);
 }

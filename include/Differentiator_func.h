@@ -28,7 +28,6 @@ struct file_t
     char* s;
 };
 
-
 Node_t* CreateNode (int type, double value, Node_t* left, Node_t* right);
 void NodeDtor (Node_t* node);
 void CreateDot (Node_t* node, FILE* file_dot);
@@ -38,6 +37,8 @@ void Calculation (Node_t* node, stack_t* stk);
 void SkipProb (char** str);
 void CreateDotUSER (Node_t* node, FILE* file_dot);
 Node_t* ReadDataBase ();
+Node_t* Diff (Node_t* node);
+Node_t* CopyNode (Node_t* node);
 
 
 Node_t* GetG (file_t* stk);
@@ -45,5 +46,6 @@ Node_t* GetN (file_t* stk);
 Node_t* GetE (file_t* stk);
 Node_t* GetT (file_t* stk);
 Node_t* GetP (file_t* stk);
+Node_t* GetS (file_t* stk);
 
 #endif
