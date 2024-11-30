@@ -88,32 +88,34 @@ void PrintDot (Node_t* node)
     system ("dot ./aaa.dot -Tpng -o ./aaa.png");
 }
 
-void Print (Node_t* node)
-{
-    if (!node) return;
+// void Print (Node_t* node)
+// {
+//     if (!node) return;
     
-    printf ("(");
+//     if (node->left) 
+//     {
+//         printf ("("); 
+//         Print (node->left);
+//     }
 
-    if (node->left) Print (node->left);
+//     if (node->type == OP)
+//     {
+//         if ((int) node->value == 42)
+//             printf (" \\cdot ");
+//         else if ((int) node->value == 47)
+//             printf (" \\frac ");
+//         else
+//             printf (" %c ", (int) node->value);
+//     }
+//     else if (node->type == VAR)
+//         printf ("x");
+//     else 
+//         printf ("%.0lf", node->value);
 
-    if (node->type == OP)
-    {
-        if ((int) node->value == 42)
-            printf (" \\cdot ");
-        else if ((int) node->value == 47)
-            printf (" \\frac ");
-        else
-            printf (" %c ", (int) node->value);
-    }
-    else if (node->type == VAR)
-        printf ("x");
-    else 
-        printf ("%.0lf", node->value);
+//     if (node->right) {Print (node->right); printf (")");}
 
-    if (node->right) Print (node->right);
 
-    printf (")");
-}
+// }
 
 void SkipProb (char** str)
 {
@@ -122,44 +124,240 @@ void SkipProb (char** str)
     *str += n;
 }
 
-#define DEF_CMD(name, str, num, code) \
-    case name: code break;
-
-void Calculation (Node_t* node, stack_t* stk)
+void Print (Node_t* node) // Попробовать написать также как Diff идя сверху
 {
-    if (!node) return;
-    
-    if (node->left) Calculation (node->left, stk);
-    if (node->right) Calculation (node->right, stk);
-
-    if (node->type == NUM) StackPush (stk, node);
+    if (node->type == NUM) printf ("%.1lf", node->value);
+    if (node->type == VAR) printf ("x");
     if (node->type == OP)
     {
         switch ((int) node->value)
         {
-            #include "commands.h"
-
-            default: {
-                printf ("ERROR\n");
+            case '+':
+            {
+                printf ("\\left(");
+                Print (node->left);
+                printf ("+");
+                Print (node->right);
+                printf ("\\right)");
+                break;
+            }
+            case '-':
+            {
+                printf ("\\left(");
+                Print (node->left);
+                printf ("-");
+                Print (node->right);
+                printf ("\\right)");
+                break;
+            }
+            case '*':
+            {
+                printf ("\\left(");
+                Print (node->left);
+                printf (" \\cdot ");
+                Print (node->right);
+                printf ("\\right)");
+                break;
+            }
+            case '/':
+            {
+                printf ("\\left(");
+                printf ("\\frac{");
+                Print (node->left);
+                printf ("}{");
+                Print (node->right);
+                putchar ('}');
+                printf ("\\right)");
+                break;
+            }
+            default:
+            {
+                printf ("ERERR\n");
+                break;
             }
         }
     }
 }
 
-#undef DEF_CMD
+void Calculation (Node_t* node)
+{
+    if (!node) return;
+    
+    if (node->left->left) Calculation (node->left);
+    if (node->right->left) Calculation (node->right);
 
-#define _ADD(x,y) {CreateNode (OP, '+', Diff (x), Diff (y));}
+    if (node->type == OP && node->left->type == NUM && node->right->type == NUM)
+    {
+        switch ((int) node->value) 
+        {
+            case '+':
+            {
+                node->value = node->left->value + node->right->value;
+                break;
+            }
+            case '-':
+            {
+                node->value = node->left->value - node->right->value;
+                break;
+            }
+            case '*':
+            {
+                node->value = node->left->value * node->right->value;
+                break;
+            }
+            case '/':
+            {
+                node->value = node->left->value / node->right->value;
+                break;
+            }
+            default: printf ("er\n");
+        }
+        node->type = NUM;
+        NodeDtor (node->left);
+        NodeDtor (node->right);
+        node->left = NULL;
+        node->right = NULL;
+    }
+    else if (node->type == OP && (int) node->value == '*')
+    {
+        if ((node->left->type == NUM && (int) node->left->value == 0) || 
+            (node->right->type == NUM && (int) node->right->value == 0)) // *0 0*
+        {
+            node->type = NUM;
+            node->value = 0;
+            NodeDtor (node->left);
+            NodeDtor (node->right);
+            node->left = NULL;
+            node->right = NULL;
+        }
+        else if (node->left->type == NUM && (int) node->left->value == 1) // 1*
+        {
+            node->type = node->right->type;
+            node->value = node->right->value;
+
+            Node_t* new_left = NULL;
+            Node_t* new_right = NULL;
+            if (node->right->right) 
+                new_right = CopyNode (node->right->right);
+            if (node->right->left)
+                new_left = CopyNode (node->right->left);
+            
+            NodeDtor (node->left);
+            NodeDtor (node->right);
+            node->left = new_left;
+            node->right = new_right; 
+        }
+        else if (node->right->type == NUM && (int) node->right->value == 1) // *1
+        {
+            node->type = node->left->type;
+            node->value = node->left->value;
+
+            Node_t* new_left = NULL;
+            Node_t* new_right = NULL;
+            if (node->left->right) 
+                new_right = CopyNode (node->left->right);
+            if (node->left->left)
+                new_left = CopyNode (node->left->left);
+            
+            NodeDtor (node->left);
+            NodeDtor (node->right);
+            node->left = new_left;
+            node->right = new_right;         
+        }
+    }
+    else if (node->type == OP && (int) node->value == '+')
+    {
+        if (node->left->type == NUM && (int) node->left->value == 0) // 0+
+        {
+            node->type = node->right->type;
+            node->value = node->right->value;
+
+            Node_t* new_left = NULL;
+            Node_t* new_right = NULL;
+            if (node->right->right) 
+                new_right = CopyNode (node->right->right);
+            if (node->right->left)
+                new_left = CopyNode (node->right->left);
+            
+            NodeDtor (node->left);
+            NodeDtor (node->right);
+            node->left = new_left;
+            node->right = new_right; 
+        }
+        else if (node->right->type == NUM && (int) node->right->value == 0) // +0
+        {
+            node->type = node->left->type;
+            node->value = node->left->value;
+
+            Node_t* new_left = NULL;
+            Node_t* new_right = NULL;
+            if (node->left->right) 
+                new_right = CopyNode (node->left->right);
+            if (node->left->left)
+                new_left = CopyNode (node->left->left);
+            
+            NodeDtor (node->left);
+            NodeDtor (node->right);
+            node->left = new_left;
+            node->right = new_right; 
+        }
+    }
+    else if (node->type == OP && (int) node->value == '-')
+    {
+        if (node->right->type == NUM && (int) node->right->value == 0) // -0
+        {
+            node->type = node->left->type;
+            node->value = node->left->value;
+
+            Node_t* new_left = NULL;
+            Node_t* new_right = NULL;
+            if (node->left->right) 
+                new_right = CopyNode (node->left->right);
+            if (node->left->left)
+                new_left = CopyNode (node->left->left);
+            
+            NodeDtor (node->left);
+            NodeDtor (node->right);
+            node->left = new_left;
+            node->right = new_right; 
+        }
+    }
+}
+
+#define dl Diff(node->left)
+#define dr Diff(node->right)
+#define cl CopyNode(node->left)
+#define cr CopyNode(node->right)
+#define CONST(c) CreateNode (NUM, c, NULL, NULL)
+#define ADD(x,y) CreateNode (OP, '+', x, y)
+#define SUB(x,y) CreateNode (OP, '-', x, y)
+#define MUL(x,y) CreateNode (OP, '*', x, y)
+#define DIV(x,y) CreateNode (OP, '/', x, y)
+#define COS(x)   CreateNode (OP, 'c', NULL, x)
+#define SIN(x)   CreateNode (OP, 's', NULL, x)
+
+Node_t* a = NULL;
+#define dl_ a = CopyNode (node->left); printf ("\\left("); Print (a); printf ("\\right)'"); NodeDtor (a)
+#define dr_ a = CopyNode (node->right); printf ("\\left("); Print (a); printf ("\\right)'"); NodeDtor (a)
+#define cl_ a = CopyNode (node->left); printf ("\\left("); Print (a); printf ("\\right)"); NodeDtor (a)
+#define cr_ a = CopyNode (node->right); printf ("\\left("); Print (a); printf ("\\right)"); NodeDtor (a)
+#define ADD_(x,y) {x; printf (" + "); y;}
+#define SUB_(x,y) {x; printf (" - "); y;}
+#define MUL_(x,y) {x; printf (" \\cdot "); y;}
+#define DIV_(x,y) {printf ("\\frac{"); x; printf ("}{"); y; putchar ('}');}
 
 Node_t* Diff (Node_t* node)
 {
     if (node->type == NUM)
     {
-        Node_t* node1 = CreateNode (NUM, 0, NULL, NULL);
+        Node_t* node1 = CONST (0);
+        printf ("\\[(%.1lf)' = 0\\]\n", node->value);
         return node1;
     }
     if (node->type == VAR)
     {
-        Node_t* node2 = CreateNode (NUM, 1, NULL, NULL);
+        Node_t* node2 = CONST (1);
+        printf ("\\[(%c)' = 1\\]\n", (int) node->value);
         return node2;
     }
     if (node->type == OP)
@@ -168,44 +366,45 @@ Node_t* Diff (Node_t* node)
         {
             case '+':
             {
-                Node_t* dl = Diff (node->left);
-                Node_t* dr = Diff (node->right);
-                Node_t* node3 = CreateNode (OP, '+', dl, dr);
-                return node3;
+                printf ("\\[");
+                // ADD_ (cl_, cr_); printf ("' = ");
+                ADD_ (dl_, dr_);
+                printf ("\\]\n");
+                return ADD (dl, dr);
                 break;
             }
             case '-':
             {
-                Node_t* dl = Diff (node->left);
-                Node_t* dr = Diff (node->right);
-                Node_t* node4 = CreateNode (OP, '-', dl, dr);
-                return node4;
+                printf ("\\[");
+                SUB_ (dl_, dr_);
+                printf ("\\]\n");
+                return SUB (dl, dr);
                 break;
             }
             case '*':
             {
-                Node_t* node5 = CreateNode (OP, '+', CreateNode (OP, '*', Diff (node->left), CopyNode (node->right)),
-                                            CreateNode (OP, '*', CopyNode (node->left), Diff (node->right))); 
-                return node5;
+                printf ("\\[");
+                ADD_ (MUL_ (dl_, cr_), MUL_ (cl_, dr_));
+                printf ("\\]\n");
+                return ADD (MUL (dl, cr), MUL (cl, dr));
                 break;
             }
             case '/':
             {
-                Node_t* node6 = CreateNode (OP, '/', CreateNode (OP, '-', CreateNode (OP, '*', Diff (node->left), CopyNode(node->right)), CreateNode (OP, '*', CopyNode (node->left), Diff (node->right))), CreateNode (OP, '^', CopyNode (node->right), CreateNode (NUM, 2, NULL, NULL)));
-                return node6;
+                printf ("\\[");
+                DIV_ (SUB_(MUL_ (dl_, cr_), MUL_ (cl_, dr_)), MUL_ (cr_, cr_));
+                printf ("\\]\n");
+                return DIV (SUB(MUL (dl, cr), MUL (cl, dr)), MUL (cr, cr));
                 break;
             }
             case 'c':
             {
-                Node_t* node7 = CreateNode (OP, '*', CreateNode (OP, '*', CreateNode (NUM, -1, NULL, NULL), CreateNode (OP, 's', NULL, CopyNode (node->right))), 
-                                            Diff (node->right));
-                return node7;
+                return MUL (MUL (CONST (-1), SIN (cr)), dr);
                 break;
             }
             case 's':
             {
-                Node_t* node8 = CreateNode (OP, '*', CreateNode (OP, '*', CreateNode (NUM, 1, NULL, NULL), CreateNode (OP, 'c', NULL, CopyNode (node->right))), Diff (node->right));
-                return node8;
+                return MUL (COS (cr), dr);
                 break;
             }
             default: break;

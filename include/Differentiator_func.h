@@ -33,7 +33,7 @@ void NodeDtor (Node_t* node);
 void CreateDot (Node_t* node, FILE* file_dot);
 void PrintDot (Node_t* node);
 void Print (Node_t* node);
-void Calculation (Node_t* node, stack_t* stk);
+void Calculation (Node_t* node);
 void SkipProb (char** str);
 void CreateDotUSER (Node_t* node, FILE* file_dot);
 Node_t* ReadDataBase ();

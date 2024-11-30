@@ -9,8 +9,14 @@ int main ()
     Node_t* value = ReadDataBase ();
     PrintDot (value);
 
+    printf ("\\[\\left("); Print (value); printf ("\\right)'\\]\n");
     Node_t* diff = Diff (value);
+
+    Calculation (diff);
+    printf ("\\text{After a few adjustments:}\n");
+    printf ("\\["); Print (diff); printf ("\\]\n");
     PrintDot (diff);
+
     // Print (diff);
 
     NodeDtor (diff);
