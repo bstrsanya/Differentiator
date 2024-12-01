@@ -43,6 +43,11 @@ Node_t* GetN (file_t* stk)
         stk->p++;
         return CreateNode (VAR, 120, NULL, NULL);
     }
+    if (stk->s[stk->p] == 'e')
+    {
+        stk->p++;
+        return CreateNode (MATH_CONST, 'e', NULL, NULL);
+    }
 
     while (('0' <= stk->s[stk->p]) && (stk->s[stk->p] <= '9'))
     {
@@ -129,6 +134,12 @@ Node_t* GetP (file_t* stk)
         stk->p++;
         Node_t* value = GetP (stk);
         return CreateNode (OP, 115, NULL, value);
+    }
+    else if (stk->s[stk->p] == 'l')
+    {
+        stk->p++;
+        Node_t* value = GetP (stk);
+        return CreateNode (OP, 108, NULL, value);
     }
     else
         return GetN (stk);

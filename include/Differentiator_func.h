@@ -13,6 +13,7 @@ enum type
     NUM = 1,
     VAR = 2,
     OP  = 3,
+    MATH_CONST = 4
 };
 
 enum operation

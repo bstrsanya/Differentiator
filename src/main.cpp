@@ -17,8 +17,6 @@ int main ()
     printf ("\\["); Print (diff); printf ("\\]\n");
     PrintDot (diff);
 
-    // Print (diff);
-
     NodeDtor (diff);
 
     NodeDtor (value);
