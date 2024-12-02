@@ -9,6 +9,14 @@ struct Node_t
     Node_t* right;
 };
 
+struct Tree_t
+{
+    Node_t* expression;
+    Node_t* expression_diff;
+    FILE* output;
+    FILE* input;
+};
+
 typedef Node_t* StackElem_t;
 
 #endif

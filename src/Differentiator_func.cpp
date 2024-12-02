@@ -25,16 +25,38 @@ void NodeDtor (Node_t* node)
     if (node->left) NodeDtor (node->left);
     if (node->right) NodeDtor (node->right);
 
-    // printf ("ad = %p, type = [%d], value = [%lf]\n", node, node->type, node->value);
+    // printf ("ad = %p, type = [%d], value = [%g]\n", node, node->type, node->value);
     free (node);
 }
+
+void TreeCtor (Tree_t* tree, const char* name_file)
+{
+    assert (tree);
+    assert (name_file);
+
+    tree->input = fopen (name_file, "rb");
+    ReadDataBase (tree);
+    fclose (tree->input);
+
+    tree->output = fopen ("dif.tex", "wb");
+}
+
+void TreeDtor (Tree_t* tree)
+{
+    assert (tree);
+
+    NodeDtor (tree->expression);
+    NodeDtor (tree->expression_diff);
+    fclose (tree->output);
+}
+
 
 void CreateDot (Node_t* node, FILE* file_dot)
 {
     if (!node) return;
 
     if (node->type == NUM)
-        fprintf (file_dot, "node%p [shape=record; style = filled; fillcolor = \"#a2ff00\"; color = \"#800000\"; label = \"{type = NUM | value = %lf | address = %p | { <f0> left = %p | <f1> right = %p}}\"];\n", node, node->value, node, node->left, node->right);
+        fprintf (file_dot, "node%p [shape=record; style = filled; fillcolor = \"#a2ff00\"; color = \"#800000\"; label = \"{type = NUM | value = %g | address = %p | { <f0> left = %p | <f1> right = %p}}\"];\n", node, node->value, node, node->left, node->right);
 
     else if (node->type == OP)
         fprintf (file_dot, "node%p [shape=record; style = filled; fillcolor = \"#ffe4c4\"; color = \"#800000\"; label = \"{type = OP | value = %c | address = %p | { <f0> left = %p | <f1> right = %p}}\"];\n", node, (char) node->value, node, node->left, node->right);
@@ -56,7 +78,7 @@ void CreateDotUSER (Node_t* node, FILE* file_dot)
     if (!node) return;
 
     if (node->type == NUM)
-        fprintf (file_dot, "node%p [shape=record; style = filled; fillcolor = \"#a2ff00\"; label = \"%.3lf\"];\n", node, node->value);
+        fprintf (file_dot, "node%p [shape=record; style = filled; fillcolor = \"#a2ff00\"; label = \"%.3g\"];\n", node, node->value);
 
     else if (node->type == OP)
         fprintf (file_dot, "node%p [shape=circle; style = filled; fillcolor = \"#ffe4c4\"; label = \"%c\"];\n", node, (char) node->value);
@@ -91,35 +113,6 @@ void PrintDot (Node_t* node)
     system ("dot ./aaa.dot -Tpng -o ./aaa.png");
 }
 
-// void Print (Node_t* node)
-// {
-//     if (!node) return;
-    
-//     if (node->left) 
-//     {
-//         printf ("("); 
-//         Print (node->left);
-//     }
-
-//     if (node->type == OP)
-//     {
-//         if ((int) node->value == 42)
-//             printf (" \\cdot ");
-//         else if ((int) node->value == 47)
-//             printf (" \\frac ");
-//         else
-//             printf (" %c ", (int) node->value);
-//     }
-//     else if (node->type == VAR)
-//         printf ("x");
-//     else 
-//         printf ("%.0lf", node->value);
-
-//     if (node->right) {Print (node->right); printf (")");}
-
-
-// }
-
 void SkipProb (char** str)
 {
     int n = 0;
@@ -127,89 +120,88 @@ void SkipProb (char** str)
     *str += n;
 }
 
-void Print (Node_t* node) // Попробовать написать также как Diff идя сверху
+void Print (Node_t* node, FILE* file)
 {
-    // assert (node);
     if (node->type == NUM) 
     {
         if (node->value < 0)
-            printf ("(%.1lf)", node->value);
+            fprintf (file, "(%g)", node->value);
         else
-            printf ("%.1lf", node->value);
+            fprintf (file, "%g", node->value);
     }
-    if (node->type == VAR) printf ("x");
+    if (node->type == VAR) fprintf (file, "x");
     if (node->type == MATH_CONST) 
-        printf ("%c", (int) node->value);
+        fprintf (file, "%c", (int) node->value);
     if (node->type == OP)
     {
         switch ((int) node->value)
         {
             case '+':
             {
-                printf ("\\left(");
-                Print (node->left);
-                printf ("+");
-                Print (node->right);
-                printf ("\\right)");
+                fprintf (file, "\\left(");
+                Print (node->left, file);
+                fprintf (file, "+");
+                Print (node->right, file);
+                fprintf (file, "\\right)");
                 break;
             }
             case '-':
             {
-                printf ("\\left(");
-                Print (node->left);
-                printf ("-");
-                Print (node->right);
-                printf ("\\right)");
+                fprintf (file, "\\left(");
+                Print (node->left, file);
+                fprintf (file, "-");
+                Print (node->right, file);
+                fprintf (file, "\\right)");
                 break;
             }
             case '*':
             {
                 // printf ("\\left(");
-                Print (node->left);
-                printf (" \\cdot ");
-                Print (node->right);
+                Print (node->left, file);
+                fprintf (file, " \\cdot ");
+                Print (node->right, file);
                 // printf ("\\right)");
                 break;
             }
             case '/':
             {
                 // if (node->left->type == OP) printf ("\\left(");
-                printf ("\\frac{");
-                Print (node->left);
-                printf ("}{");
-                Print (node->right);
-                putchar ('}');
+                fprintf (file, "\\frac{");
+                Print (node->left, file);
+                fprintf (file, "}{");
+                Print (node->right, file);
+                fprintf (file, "}");
                 // printf ("\\right)");
                 break;
             }
             case 'c':
             {
-                printf ("\\cos(");
-                Print (node->right);
-                printf (")");
+                fprintf (file, "\\cos\\left(");
+                Print (node->right, file);
+                fprintf (file, "\\right)");
                 break;
             }
             case 's':
             {
-                printf ("\\sin(");
-                Print (node->right);
-                printf (")");
+                fprintf (file, "\\sin\\left(");
+                Print (node->right, file);
+                fprintf (file, "\\right)");
                 break;
             }
             case 'l':
             {
-                printf ("\\ln(");
-                Print (node->right);
-                printf (")");
+                fprintf (file, "\\ln\\left(");
+                Print (node->right, file);
+                fprintf (file, "\\right)");
                 break;
             }
             case '^':
             {
-                printf ("(");
-                Print (node->left);
-                printf (")^{");
-                Print (node->right);
-                printf ("}");
+                fprintf (file, "\\left(");
+                Print (node->left, file);
+                fprintf (file, "\\right)^{");
+                Print (node->right, file);
+                fprintf (file, "}");
                 break;
             }
             default:
@@ -376,8 +368,8 @@ void Calculation (Node_t* node)
     }
 }
 
-#define dl Diff(node->left)
-#define dr Diff(node->right)
+#define dl Diff(node->left, file)
+#define dr Diff(node->right, file)
 #define cl CopyNode(node->left)
 #define cr CopyNode(node->right)
 #define CONST(c) CreateNode (NUM, c, NULL, NULL)
@@ -392,27 +384,27 @@ void Calculation (Node_t* node)
 #define EXP(x) CreateNode (OP, '^', CreateNode (MATH_CONST, 'e', NULL, NULL), x)
 
 Node_t* a = NULL;
-#define dl_ a = CopyNode (node->left); printf ("\\left("); Print (a); printf ("\\right)'"); NodeDtor (a)
-#define dr_ a = CopyNode (node->right); printf ("\\left("); Print (a); printf ("\\right)'"); NodeDtor (a)
-#define cl_ a = CopyNode (node->left); printf ("\\left("); Print (a); printf ("\\right)"); NodeDtor (a)
-#define cr_ a = CopyNode (node->right); printf ("\\left("); Print (a); printf ("\\right)"); NodeDtor (a)
-#define ADD_(x,y) {printf ("("); x; printf (" + "); y; printf (")");}
-#define SUB_(x,y) {x; printf (" - "); y;}
-#define MUL_(x,y) {x; printf (" \\cdot "); y;}
-#define DIV_(x,y) {printf ("\\frac{"); x; printf ("}{"); y; putchar ('}');}
-#define SIN_(x) {printf ("\\sin"); x;}
-#define COS_(x) {printf ("\\cos"); x;}
-#define ST_(x, y) {x; printf ("^"); printf ("{"); y; printf ("}");}
-#define LN_(x) {printf ("\\ln("); x; printf (")");}
+#define dl_ a = CopyNode (node->left); fprintf (file, "\\left("); Print (a, file); fprintf (file, "\\right)'"); NodeDtor (a)
+#define dr_ a = CopyNode (node->right); fprintf (file, "\\left("); Print (a, file); fprintf (file, "\\right)'"); NodeDtor (a)
+#define cl_ a = CopyNode (node->left); fprintf (file, "\\left("); Print (a, file); fprintf (file, "\\right)"); NodeDtor (a)
+#define cr_ a = CopyNode (node->right); fprintf (file, "\\left("); Print (a, file); fprintf (file, "\\right)"); NodeDtor (a)
+#define ADD_(x,y) {fprintf (file, "\\left("); x; fprintf (file, " + "); y; fprintf (file, "\\right)");}
+#define SUB_(x,y) {x; fprintf (file, " - "); y;}
+#define MUL_(x,y) {x; fprintf (file, " \\cdot "); y;}
+#define DIV_(x,y) {fprintf (file, "\\frac{"); x; fprintf (file, "}{"); y; fprintf (file, "}");}
+#define SIN_(x) {fprintf (file, "\\sin"); x;}
+#define COS_(x) {fprintf (file, "\\cos"); x;}
+#define ST_(x, y) {x; fprintf (file, "^"); fprintf (file, "{"); y; fprintf (file, "}");}
+#define LN_(x) {fprintf (file, "\\ln{"); x; fprintf (file, "}");}
 
-#define CONST_(x) printf ("%.1lf' = %d", node->value, x);
-#define M_(x) printf ("%d", x);
-#define VAR_ printf ("\%c' = 1", (int) node->value);
+#define CONST_(x) fprintf (file, "%.1g' = %d", node->value, x);
+#define M_(x) fprintf (file, "%d", x);
+#define VAR_ fprintf (file, "\%c' = 1", (int) node->value);
 
-#define BEGIN printf ("\\begin{equation}\n\t")
-#define END printf ("\n\\end{equation}\n")
+#define BEGIN fprintf (file, "\\text{Очень очевидно, что}\n\\begin{equation}\n\t")
+#define END fprintf (file, "\n\\end{equation}\n")
 
-Node_t* Diff (Node_t* node)
+Node_t* Diff (Node_t* node, FILE* file)
 {
     if (node->type == NUM)
     {
@@ -423,7 +415,7 @@ Node_t* Diff (Node_t* node)
     if (node->type == MATH_CONST)
     {
         Node_t* node10 = CONST (0);
-        BEGIN; printf ("%c' = 0", (int) node->value); END;
+        BEGIN; fprintf (file, "%c' = 0", (int) node->value); END;
         return node10;
     }
     if (node->type == VAR)
@@ -438,48 +430,56 @@ Node_t* Diff (Node_t* node)
         {
             case '+':
             {
+                BEGIN; ADD_ (cl_, cr_); END;
                 BEGIN; ADD_ (dl_, dr_); END;
                 return ADD (dl, dr);
                 break;
             }
             case '-':
             {
+                BEGIN; SUB_ (cl_, cr_); END;
                 BEGIN; SUB_ (dl_, dr_); END;
                 return SUB (dl, dr);
                 break;
             }
             case '*':
             {
+                BEGIN; MUL_ (cl_, cr_); END;
                 BEGIN; ADD_ (MUL_ (dl_, cr_), MUL_ (cl_, dr_)); END;
                 return ADD (MUL (dl, cr), MUL (cl, dr));
                 break;
             }
             case '/':
             {
+                BEGIN; DIV_ (cl_, cr_); END;
                 BEGIN; DIV_ (SUB_(MUL_ (dl_, cr_), MUL_ (cl_, dr_)), MUL_ (cr_, cr_)); END;
                 return DIV (SUB(MUL (dl, cr), MUL (cl, dr)), ST (cr, CONST (2)));
                 break;
             }
             case 'c':
             {
+                BEGIN; COS_ (cr_); END;
                 BEGIN; MUL_ (MUL_ (M_(-1) , SIN_ (cr_)), dr_); END;
                 return MUL (MUL (CONST (-1), SIN (cr)), dr);
                 break;
             }
             case 's':
             {
+                BEGIN; SIN_ (cr_); END;
                 BEGIN; MUL_ (COS_ (cr_), dr_); END;
                 return MUL (COS (cr), dr);
                 break;
             }
             case 'l':
             {
+                BEGIN; LN_ (cr_); END;
                 BEGIN; MUL_ (DIV_ (M_ (1), cr_), dr_); END;
                 return MUL (DIV (CONST (1), cr), dr);
                 break;
             }
             case '^':
             {
+                BEGIN; ST_ (cl_, cr_); END;
                 BEGIN; MUL_ (ST_ (cl_, cr_), ADD_ (MUL_ (dr_, LN_(cl_)), MUL_(cr_, MUL_ (DIV_ (M_(1), cl_), dl_)))); END;
                 return MUL (ST (cl, cr), ADD (MUL (dr, LN (cl)), MUL (cr, MUL (DIV (CONST (1), cl), dl))));
                 break;

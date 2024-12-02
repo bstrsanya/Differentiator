@@ -6,18 +6,18 @@
 
 int main ()
 {
-    Node_t* value = ReadDataBase ();
-    PrintDot (value);
+    Tree_t tree = {};
+    TreeCtor (&tree, "primer.txt");
+    PrintDot (tree.expression);
+    
+    fprintf (tree.output, "\\begin{task}{1}\n\t\\[\\left("); Print (tree.expression, tree.output); fprintf (tree.output, "\\right)'\\]\n\\end{task}\n\n\\begin{solution}\n");
+    tree.expression_diff = Diff (tree.expression, tree.output);
 
-    printf ("\\[\\left("); Print (value); printf ("\\right)'\\]\n");
-    Node_t* diff = Diff (value);
+    Calculation (tree.expression_diff);
+    fprintf (tree.output, "\\text{After a few adjustments:}\n");
+    fprintf (tree.output, "\\["); Print (tree.expression_diff, tree.output); fprintf (tree.output, "\\]\n");
+    fprintf (tree.output, "\\end{solution}\n");
+    PrintDot (tree.expression_diff);
 
-    Calculation (diff);
-    printf ("\\text{After a few adjustments:}\n");
-    printf ("\\["); Print (diff); printf ("\\]\n");
-    PrintDot (diff);
-
-    NodeDtor (diff);
-
-    NodeDtor (value);
+    TreeDtor (&tree);
 }

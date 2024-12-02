@@ -3,23 +3,21 @@
 #include <assert.h>
 #include "Differentiator_func.h"
 
-Node_t* ReadDataBase ()
+void ReadDataBase (Tree_t* tree)
 {
-    FILE* file = fopen ("primer.txt", "rb");
     size_t size = 0;
 
     file_t* stk = (file_t*) calloc (1, sizeof (file_t));
     assert (stk);
-    stk->s = ReadFile (file, &size);
+    stk->s = ReadFile (tree->input, &size);
     stk->p = 0;
-    fclose (file);
     
     Node_t* value = GetG (stk);
     
     free (stk->s);
     free (stk);
     
-    return value;
+    tree->expression = value;
 }
 
 Node_t* GetG (file_t* stk)

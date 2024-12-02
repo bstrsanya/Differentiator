@@ -6,8 +6,6 @@
 #include "Readfile.h"
 #include "SizeFile.h"
 
-#define DEF_CMD(name, str, num, code) name = num,
-
 enum type
 {
     NUM = 1,
@@ -15,13 +13,6 @@ enum type
     OP  = 3,
     MATH_CONST = 4
 };
-
-enum operation
-{
-    #include "commands.h"
-};
-
-#undef DEF_CMD
 
 struct file_t
 {
@@ -33,14 +24,15 @@ Node_t* CreateNode (int type, double value, Node_t* left, Node_t* right);
 void NodeDtor (Node_t* node);
 void CreateDot (Node_t* node, FILE* file_dot);
 void PrintDot (Node_t* node);
-void Print (Node_t* node);
+void Print (Node_t* node, FILE* file);
 void Calculation (Node_t* node);
 void SkipProb (char** str);
 void CreateDotUSER (Node_t* node, FILE* file_dot);
-Node_t* ReadDataBase ();
-Node_t* Diff (Node_t* node);
+void ReadDataBase (Tree_t* tree);
+Node_t* Diff (Node_t* node, FILE* file);
 Node_t* CopyNode (Node_t* node);
-
+void TreeCtor (Tree_t* tree, const char* name_file);
+void TreeDtor (Tree_t* tree);
 
 Node_t* GetG (file_t* stk);
 Node_t* GetN (file_t* stk);
