@@ -2,7 +2,6 @@
 #define FUNC_H
 
 #include "Struct.h"
-#include "stack.h"
 #include "Readfile.h"
 #include "SizeFile.h"
 

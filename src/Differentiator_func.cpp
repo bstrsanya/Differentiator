@@ -402,6 +402,10 @@ Node_t* a = NULL;
 #define VAR_ fprintf (file, "\%c' = 1", (int) node->value);
 
 #define BEGIN fprintf (file, "\\text{Очень очевидно, что}\n\\begin{equation}\n\t")
+#define OPEN fprintf (file, "\\left(")
+#define CLOSE fprintf (file, "\\right)")
+#define PRO fprintf (file, "'")
+#define EQUALLY fprintf (file, "=")
 #define END fprintf (file, "\n\\end{equation}\n")
 
 Node_t* Diff (Node_t* node, FILE* file)
@@ -430,57 +434,57 @@ Node_t* Diff (Node_t* node, FILE* file)
         {
             case '+':
             {
-                BEGIN; ADD_ (cl_, cr_); END;
-                BEGIN; ADD_ (dl_, dr_); END;
+                BEGIN; OPEN; ADD_ (cl_, cr_); CLOSE; PRO; 
+                EQUALLY; ADD_ (dl_, dr_); END;
                 return ADD (dl, dr);
                 break;
             }
             case '-':
             {
-                BEGIN; SUB_ (cl_, cr_); END;
-                BEGIN; SUB_ (dl_, dr_); END;
+                BEGIN; OPEN; SUB_ (cl_, cr_); CLOSE; PRO;
+                EQUALLY; SUB_ (dl_, dr_); END;
                 return SUB (dl, dr);
                 break;
             }
             case '*':
             {
-                BEGIN; MUL_ (cl_, cr_); END;
-                BEGIN; ADD_ (MUL_ (dl_, cr_), MUL_ (cl_, dr_)); END;
+                BEGIN; OPEN; MUL_ (cl_, cr_); CLOSE; PRO;
+                EQUALLY; ADD_ (MUL_ (dl_, cr_), MUL_ (cl_, dr_)); END;
                 return ADD (MUL (dl, cr), MUL (cl, dr));
                 break;
             }
             case '/':
             {
-                BEGIN; DIV_ (cl_, cr_); END;
-                BEGIN; DIV_ (SUB_(MUL_ (dl_, cr_), MUL_ (cl_, dr_)), MUL_ (cr_, cr_)); END;
+                BEGIN; OPEN; DIV_ (cl_, cr_); CLOSE; PRO;
+                EQUALLY; DIV_ (SUB_(MUL_ (dl_, cr_), MUL_ (cl_, dr_)), ST_ (cr_, M_(2))); END;
                 return DIV (SUB(MUL (dl, cr), MUL (cl, dr)), ST (cr, CONST (2)));
                 break;
             }
             case 'c':
             {
-                BEGIN; COS_ (cr_); END;
-                BEGIN; MUL_ (MUL_ (M_(-1) , SIN_ (cr_)), dr_); END;
+                BEGIN; OPEN; COS_ (cr_); CLOSE; PRO;
+                EQUALLY; MUL_ (MUL_ (M_(-1) , SIN_ (cr_)), dr_); END;
                 return MUL (MUL (CONST (-1), SIN (cr)), dr);
                 break;
             }
             case 's':
             {
-                BEGIN; SIN_ (cr_); END;
-                BEGIN; MUL_ (COS_ (cr_), dr_); END;
+                BEGIN; OPEN; SIN_ (cr_); CLOSE; PRO;
+                EQUALLY; MUL_ (COS_ (cr_), dr_); END;
                 return MUL (COS (cr), dr);
                 break;
             }
             case 'l':
             {
-                BEGIN; LN_ (cr_); END;
-                BEGIN; MUL_ (DIV_ (M_ (1), cr_), dr_); END;
+                BEGIN; OPEN; LN_ (cr_); CLOSE; PRO;
+                EQUALLY; MUL_ (DIV_ (M_ (1), cr_), dr_); END;
                 return MUL (DIV (CONST (1), cr), dr);
                 break;
             }
             case '^':
             {
-                BEGIN; ST_ (cl_, cr_); END;
-                BEGIN; MUL_ (ST_ (cl_, cr_), ADD_ (MUL_ (dr_, LN_(cl_)), MUL_(cr_, MUL_ (DIV_ (M_(1), cl_), dl_)))); END;
+                BEGIN; OPEN; ST_ (cl_, cr_); CLOSE; PRO;
+                EQUALLY; MUL_ (ST_ (cl_, cr_), ADD_ (MUL_ (dr_, LN_(cl_)), MUL_(cr_, MUL_ (DIV_ (M_(1), cl_), dl_)))); END;
                 return MUL (ST (cl, cr), ADD (MUL (dr, LN (cl)), MUL (cr, MUL (DIV (CONST (1), cl), dl))));
                 break;
             }

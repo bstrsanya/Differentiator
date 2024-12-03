@@ -3,6 +3,6 @@ FLAGS = -D _DEBUG -ggdb3 -std=c++17 -O0 -Wall -Wextra -Weffc++ -Waggressive-loop
 all: begin run
 
 begin:
-	g++ -I./include -I./Stack/include -I./lib ./lib/*.cpp ./Stack/src/*.cpp ./src/*.cpp ${FLAGS} -o main
+	g++ -I./include -I./lib ./lib/*.cpp ./src/*.cpp ${FLAGS} -o main
 run:
 	./main
