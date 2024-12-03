@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <math.h>
 
 #include "Differentiator_func.h"
 
@@ -45,7 +46,11 @@ void TreeDtor (Tree_t* tree)
 {
     assert (tree);
 
-    NodeDtor (tree->expression);
+    for (int i = 0; i < 100; i++)
+    {
+        free (tree->array[i]);
+    }
+    free (tree->array);
     NodeDtor (tree->expression_diff);
     fclose (tree->output);
 }
@@ -213,7 +218,7 @@ void Print (Node_t* node, FILE* file)
     }
 }
 
-void Calculation (Node_t* node)
+void Calculation (Node_t* node) // TODO постараться откопипастить
 {
     if (!node) return;
     
@@ -242,6 +247,11 @@ void Calculation (Node_t* node)
             case '/':
             {
                 node->value = node->left->value / node->right->value;
+                break;
+            }
+            case '^':
+            {
+                node->value = pow (node->left->value, node->right->value);
                 break;
             }
             default: printf ("er\n");
@@ -366,8 +376,37 @@ void Calculation (Node_t* node)
             node->right = NULL; 
         }
     }
-}
+    if (node->type == OP && (int) node->value == '^')
+    {
+        if (node->right->type == NUM && (int) node->right->value == 1)
+        {
+            node->type = node->left->type;
+            node->value = node->left->value;
 
+            Node_t* new_left = NULL;
+            Node_t* new_right = NULL;
+            if (node->left->right) 
+                new_right = CopyNode (node->left->right);
+            if (node->left->left)
+                new_left = CopyNode (node->left->left);
+            
+            NodeDtor (node->left);
+            NodeDtor (node->right);
+            node->left = new_left;
+            node->right = new_right;  
+        }
+        else if (node->left->type == NUM && (int) node->left->value == 1)
+        {
+            node->type = NUM;
+            node->value = 1;
+            NodeDtor (node->left);
+            NodeDtor (node->right);
+            node->left = NULL;
+            node->right = NULL;
+        }
+    }
+}
+//TODO разобраться с define (мб кодген)
 #define dl Diff(node->left, file)
 #define dr Diff(node->right, file)
 #define cl CopyNode(node->left)
@@ -397,8 +436,8 @@ Node_t* a = NULL;
 #define ST_(x, y) {x; fprintf (file, "^"); fprintf (file, "{"); y; fprintf (file, "}");}
 #define LN_(x) {fprintf (file, "\\ln{"); x; fprintf (file, "}");}
 
-#define CONST_(x) fprintf (file, "%.1g' = %d", node->value, x);
-#define M_(x) fprintf (file, "%d", x);
+#define CONST_(x) fprintf (file, "%g' = %g", node->value, (double) x);
+#define M_(x) fprintf (file, "%g", (double) x);
 #define VAR_ fprintf (file, "\%c' = 1", (int) node->value);
 
 #define BEGIN fprintf (file, "\\text{Очень очевидно, что}\n\\begin{equation}\n\t")
@@ -483,9 +522,18 @@ Node_t* Diff (Node_t* node, FILE* file)
             }
             case '^':
             {
-                BEGIN; OPEN; ST_ (cl_, cr_); CLOSE; PRO;
-                EQUALLY; MUL_ (ST_ (cl_, cr_), ADD_ (MUL_ (dr_, LN_(cl_)), MUL_(cr_, MUL_ (DIV_ (M_(1), cl_), dl_)))); END;
-                return MUL (ST (cl, cr), ADD (MUL (dr, LN (cl)), MUL (cr, MUL (DIV (CONST (1), cl), dl))));
+                if (node->right->type == NUM)
+                {
+                    double poc = node->right->value;
+                    BEGIN; OPEN; ST_ (cl_, cr_); CLOSE; PRO;
+                    EQUALLY; MUL_ (MUL_ (M_(poc), ST_ (cl_, M_(poc-1))), dl_); END;
+                    return MUL (MUL (CONST (poc), ST (cl, CONST (poc - 1))), dl);
+                }
+                else {
+                    BEGIN; OPEN; ST_ (cl_, cr_); CLOSE; PRO;
+                    EQUALLY; MUL_ (ST_ (cl_, cr_), ADD_ (MUL_ (dr_, LN_(cl_)), MUL_(cr_, MUL_ (DIV_ (M_(1), cl_), dl_)))); END;
+                    return MUL (ST (cl, cr), ADD (MUL (dr, LN (cl)), MUL (cr, MUL (DIV (CONST (1), cl), dl))));
+                }
                 break;
             }
             default: break;

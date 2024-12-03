@@ -15,6 +15,7 @@ struct Tree_t
     Node_t* expression_diff;
     FILE* output;
     FILE* input;
+    Node_t** array;
 };
 
 typedef Node_t* StackElem_t;

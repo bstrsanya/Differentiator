@@ -1,144 +1,208 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 #include "Differentiator_func.h"
+
+Node_t** CreateTokens (char* str);
 
 void ReadDataBase (Tree_t* tree)
 {
     size_t size = 0;
 
-    file_t* stk = (file_t*) calloc (1, sizeof (file_t));
-    assert (stk);
-    stk->s = ReadFile (tree->input, &size);
-    stk->p = 0;
-    
-    Node_t* value = GetG (stk);
-    
-    free (stk->s);
-    free (stk);
+    char* s = ReadFile (tree->input, &size);
+
+    Node_t** array = CreateTokens (s);
+
+    int pointer = 0;
+    Node_t* value = GetG (&pointer, array);
     
     tree->expression = value;
+    tree->array = array;
+    free (s);
 }
 
-Node_t* GetG (file_t* stk)
+Node_t** CreateTokens (char* s)
 {
-    assert (stk);
+    int t = 0;
+    Node_t** array = (Node_t**) calloc (100, sizeof (Node_t*));
+    for (int i = 0; i < 100; i++)
+    {
+        array[i] = CreateNode (0, 0, NULL, NULL);
+    }
 
-    Node_t* value = GetE (stk);
-    if (stk->s[stk->p] != '$')
+    int y = 0;
+
+    while (s[t] != '$')
+    {
+        if (('0' <= s[t]) && (s[t] <= '9'))
+        {            
+            double d = 0;
+            int n = 0;
+            sscanf (s + t, "%lf%n", &d, &n);
+            t += n;
+            array[y]->type = NUM;
+            array[y]->value = d;
+            y++;
+        }
+        else if (('a' <= s[t] && s[t] <= 'z') || ('A' <= s[t] && s[t] <= 'Z'))
+        {
+            char com[10] = "";
+            int n = 0;
+            sscanf (s + t, "%[a-zA-Z]%n", com, &n);
+            if (!strcmp (com, "sin")) // TODO в отдельную функцию сравнения + сделать массив команд
+            {
+                array[y]->type = OP;
+                array[y]->value = 's';
+            }
+            else if (!strcmp (com, "cos"))
+            {
+                array[y]->type = OP;
+                array[y]->value = 'c';
+            }
+            else if (!strcmp (com, "ln"))
+            {
+                array[y]->type = OP;
+                array[y]->value = 'l';
+            }
+            else if (!strcmp (com, "x"))
+            {
+                array[y]->type = VAR;
+                array[y]->value = 'x';
+            }
+            else
+            {
+                printf ("ERR\n");
+            }
+            y++;
+            t += n;
+        }
+        else if (s[t] == '(' || s[t] == ')')
+        {
+            array[y]->type = OP;
+            array[y]->value = s[t];
+            t++;
+            y++;
+        }
+        else if (s[t] == '+' || s[t] == '-' || s[t] == '*' || s[t] == '/' || s[t] == '^')
+        {
+            array[y]->type = OP;
+            array[y]->value = s[t];
+            t++;
+            y++;
+        }
+        else
+        {
+            printf ("ER\n");
+        }
+
+    }
+    array[y]->value = '$';
+    return array;
+}
+
+Node_t* GetG (int* pointer, Node_t** array)
+{
+
+    Node_t* value = GetE (pointer, array);
+    if ((int) array[*pointer]->value != '$')
         assert (0);
-    stk->p++;
+    (*pointer)++;
     return value;
 }
 
-Node_t* GetN (file_t* stk)
+Node_t* GetN (int* pointer, Node_t** array)
 {
-    assert (stk);
-
-    int value = 0;
-    if (stk->s[stk->p] == 'x')
-    {
-        stk->p++;
-        return CreateNode (VAR, 120, NULL, NULL);
-    }
-    if (stk->s[stk->p] == 'e')
-    {
-        stk->p++;
-        return CreateNode (MATH_CONST, 'e', NULL, NULL);
-    }
-
-    while (('0' <= stk->s[stk->p]) && (stk->s[stk->p] <= '9'))
-    {
-        value = value * 10 + stk->s[stk->p] - '0';
-        stk->p++;
-    }
-
-    return CreateNode (NUM, value, NULL, NULL);
+    (*pointer)++;
+    return array[(*pointer)-1];
 }
 
-Node_t* GetE (file_t* stk)
+Node_t* GetE (int* pointer, Node_t** array)
 {
-    assert (stk);
+    Node_t* value = GetT (pointer, array);
 
-    Node_t* value = GetT (stk);
-    while (stk->s[stk->p] == '+' || stk->s[stk->p] == '-')
+    while (array[*pointer]->type == OP && ((int) array[*pointer]->value == '+' || (int) array[*pointer]->value == '-'))
     {
-        int op = stk->s[stk->p];
-        stk->p++;
-        Node_t* value2 = GetT(stk);
-        if (op == '+')
-            value = CreateNode (OP, 43, value, value2);
-        else
-            value = CreateNode (OP, 45, value, value2);
+        int num = *pointer;
+        (*pointer)++;
+        Node_t* value2 = GetT (pointer, array);
+        array[num]->left = value;
+        array[num]->right = value2;
+        value = array[num];
     }
     return value;
 }
 
-Node_t* GetT (file_t* stk)
+Node_t* GetT (int* pointer, Node_t** array)
 {
-    assert (stk);
+    Node_t* value = GetS (pointer, array);
 
-    Node_t* value = GetS (stk);
-    while (stk->s[stk->p] == '*' || stk->s[stk->p] == '/')
+    while (array[*pointer]->type == OP && ((int) array[*pointer]->value == '*' || (int) array[*pointer]->value == '/'))
     {
-        int op = stk->s[stk->p];
-        stk->p++;
-        Node_t* value2 = GetS(stk);
-        if (op == '*')
-            value = CreateNode (OP, 42, value, value2);
-        else
-            value = CreateNode (OP, 47, value, value2);
+        int num = *pointer;
+        (*pointer)++;
+        Node_t* value2 = GetS (pointer, array);
+        array[num]->left = value;
+        array[num]->right = value2;
+        value = array[num];
     }
+
+    
     return value;
 }
 
-Node_t* GetS (file_t* stk)
+Node_t* GetS (int* pointer, Node_t** array)
 {
-    assert (stk);
+    Node_t* value = GetP (pointer, array);
 
-    Node_t* value = GetP (stk);
-
-    if (stk->s[stk->p] == '^')
+    if (array[*pointer]->type == OP && (int) array[*pointer]->value == '^')
     {
-        stk->p++;
-        Node_t* value2 = GetP (stk);
-        value = CreateNode (OP, 94, value, value2);
+        int num = *pointer;
+        (*pointer)++;
+        Node_t* value2 = GetP (pointer, array);
+        array[num]->left = value;
+        array[num]->right = value2;
+        value = array[num];
     }
 
     return value;
 }
 
-Node_t* GetP (file_t* stk)
+Node_t* GetP (int* pointer, Node_t** array)
 {
-    assert (stk);
-
-    if (stk->s[stk->p] == '(')
+    if (array[*pointer]->type == OP && (int) array[*pointer]->value == '(')
     {
-        stk->p++;
-        Node_t* value = GetE (stk);
-        if (stk->s[stk->p] != ')')
+        (*pointer)++;
+        Node_t* value = GetE (pointer, array);
+        if ((int) array[*pointer]->value != ')')
             assert (0);
-        stk->p++;
+        (*pointer)++;
         return value;
     }
-    else if (stk->s[stk->p] == 'c')
+    else if (array[*pointer]->type == OP && (int) array[*pointer]->value == 'c')
     {
-        stk->p++;
-        Node_t* value = GetP (stk);
-        return CreateNode (OP, 99, NULL, value);
+        int num = *pointer;
+        (*pointer)++;
+        Node_t* value = GetP (pointer, array);
+        array[num]->right = value;
+        return array[num];
     }
-    else if (stk->s[stk->p] == 's')
+    else if (array[*pointer]->type == OP && (int) array[*pointer]->value == 's')
     {
-        stk->p++;
-        Node_t* value = GetP (stk);
-        return CreateNode (OP, 115, NULL, value);
+        int num = *pointer;
+        (*pointer)++;
+        Node_t* value = GetP (pointer, array);
+        array[num]->right = value;
+        return array[num];
     }
-    else if (stk->s[stk->p] == 'l')
+    else if (array[*pointer]->type == OP && (int) array[*pointer]->value == 'l')
     {
-        stk->p++;
-        Node_t* value = GetP (stk);
-        return CreateNode (OP, 108, NULL, value);
+        int num = *pointer;
+        (*pointer)++;
+        Node_t* value = GetP (pointer, array);
+        array[num]->right = value;
+        return array[num];
     }
     else
-        return GetN (stk);
+        return GetN (pointer, array);
 }

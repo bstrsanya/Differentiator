@@ -33,11 +33,19 @@ Node_t* CopyNode (Node_t* node);
 void TreeCtor (Tree_t* tree, const char* name_file);
 void TreeDtor (Tree_t* tree);
 
-Node_t* GetG (file_t* stk);
-Node_t* GetN (file_t* stk);
-Node_t* GetE (file_t* stk);
-Node_t* GetT (file_t* stk);
-Node_t* GetP (file_t* stk);
-Node_t* GetS (file_t* stk);
+// Node_t* GetG (file_t* stk);
+// Node_t* GetN (file_t* stk);
+// Node_t* GetE (file_t* stk);
+// Node_t* GetT (file_t* stk);
+// Node_t* GetP (file_t* stk);
+// Node_t* GetS (file_t* stk);
+
+Node_t* GetG (int* pointer, Node_t** array);
+Node_t* GetN (int* pointer, Node_t** array);
+Node_t* GetE (int* pointer, Node_t** array);
+Node_t* GetT (int* pointer, Node_t** array);
+Node_t* GetP (int* pointer, Node_t** array);
+Node_t* GetS (int* pointer, Node_t** array);
+
 
 #endif
