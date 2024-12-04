@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <math.h>
+#include <DSLmath.h>
 
 #include "Differentiator_func.h"
 
-Node_t* CreateNode (int type, double value, Node_t* left, Node_t* right)
+Node_t* NodeCtor (int type, double value, Node_t* left, Node_t* right)
 {
     Node_t* new_node = (Node_t*) calloc (1, sizeof (Node_t));
     assert (new_node);
@@ -26,7 +26,6 @@ void NodeDtor (Node_t* node)
     if (node->left) NodeDtor (node->left);
     if (node->right) NodeDtor (node->right);
 
-    // printf ("ad = %p, type = [%d], value = [%g]\n", node, node->type, node->value);
     free (node);
 }
 
@@ -39,90 +38,19 @@ void TreeCtor (Tree_t* tree, const char* name_file)
     ReadDataBase (tree);
     fclose (tree->input);
 
-    tree->output = fopen ("dif.tex", "wb");
+    tree->output = fopen (file_latex, "wb");
 }
 
 void TreeDtor (Tree_t* tree)
 {
     assert (tree);
 
-    for (int i = 0; i < 100; i++)
-    {
+    for (int i = 0; i < SIZE_ARRAY; i++)
         free (tree->array[i]);
-    }
+
     free (tree->array);
     NodeDtor (tree->expression_diff);
     fclose (tree->output);
-}
-
-
-void CreateDot (Node_t* node, FILE* file_dot)
-{
-    if (!node) return;
-
-    if (node->type == NUM)
-        fprintf (file_dot, "node%p [shape=record; style = filled; fillcolor = \"#a2ff00\"; color = \"#800000\"; label = \"{type = NUM | value = %g | address = %p | { <f0> left = %p | <f1> right = %p}}\"];\n", node, node->value, node, node->left, node->right);
-
-    else if (node->type == OP)
-        fprintf (file_dot, "node%p [shape=record; style = filled; fillcolor = \"#ffe4c4\"; color = \"#800000\"; label = \"{type = OP | value = %c | address = %p | { <f0> left = %p | <f1> right = %p}}\"];\n", node, (char) node->value, node, node->left, node->right);
-
-    if (node->left) 
-    {
-        fprintf (file_dot, "node%p: <f0> -> node%p [color = red, style = bold, arrowhead = vee];\n", node, node->left);
-        CreateDot (node->left, file_dot);
-    }
-    if (node->right) 
-    {
-        fprintf (file_dot, "node%p: <f1> -> node%p [color = red, style = bold, arrowhead = vee];\n", node, node->right);
-        CreateDot (node->right, file_dot);
-    }
-}
-
-void CreateDotUSER (Node_t* node, FILE* file_dot)
-{
-    if (!node) return;
-
-    if (node->type == NUM)
-        fprintf (file_dot, "node%p [shape=record; style = filled; fillcolor = \"#a2ff00\"; label = \"%.3g\"];\n", node, node->value);
-
-    else if (node->type == OP)
-        fprintf (file_dot, "node%p [shape=circle; style = filled; fillcolor = \"#ffe4c4\"; label = \"%c\"];\n", node, (char) node->value);
-
-    else if (node->type == VAR)
-        fprintf (file_dot, "node%p [shape=record; style = filled; fillcolor = pink; label = \"%c\"];\n", node, (char) node->value);
-
-    else if (node->type == MATH_CONST)
-        fprintf (file_dot, "node%p [shape=record; style = filled; fillcolor = \"#0000ff8f\"; label = \"%c\"];\n", node, (char) node->value);
-
-    if (node->left) 
-    {
-        fprintf (file_dot, "node%p -> node%p [color = red, style = bold, arrowhead = vee];\n", node, node->left);
-        CreateDotUSER (node->left, file_dot);
-    }
-    if (node->right) 
-    {
-        fprintf (file_dot, "node%p -> node%p [color = red, style = bold, arrowhead = vee];\n", node, node->right);
-        CreateDotUSER (node->right, file_dot);
-    }
-}
-
-void PrintDot (Node_t* node)
-{
-    FILE* file_dot = fopen ("./aaa.dot", "w");
-    assert (file_dot != NULL);
-    // fprintf (file_dot, "digraph{\nsplines=\"ortho\";\n");
-    fprintf (file_dot, "digraph{\n");
-    CreateDotUSER (node, file_dot);
-    fprintf (file_dot, "}");
-    fclose (file_dot);
-    system ("dot ./aaa.dot -Tpng -o ./aaa.png");
-}
-
-void SkipProb (char** str)
-{
-    int n = 0;
-    sscanf (*str, "%*[\r \n]%n", &n);
-    *str += n;
 }
 
 void Print (Node_t* node, FILE* file)
@@ -134,14 +62,18 @@ void Print (Node_t* node, FILE* file)
         else
             fprintf (file, "%g", node->value);
     }
-    if (node->type == VAR) fprintf (file, "x");
+
+    if (node->type == VAR) 
+        fprintf (file, "x");
+
     if (node->type == MATH_CONST) 
         fprintf (file, "%c", (int) node->value);
+
     if (node->type == OP)
     {
         switch ((int) node->value)
         {
-            case '+':
+            case F_ADD:
             {
                 fprintf (file, "\\left(");
                 Print (node->left, file);
@@ -150,7 +82,7 @@ void Print (Node_t* node, FILE* file)
                 fprintf (file, "\\right)");
                 break;
             }
-            case '-':
+            case F_SUB:
             {
                 fprintf (file, "\\left(");
                 Print (node->left, file);
@@ -159,7 +91,7 @@ void Print (Node_t* node, FILE* file)
                 fprintf (file, "\\right)");
                 break;
             }
-            case '*':
+            case F_MUL:
             {
                 // printf ("\\left(");
                 Print (node->left, file);
@@ -168,7 +100,7 @@ void Print (Node_t* node, FILE* file)
                 // printf ("\\right)");
                 break;
             }
-            case '/':
+            case F_DIV:
             {
                 // if (node->left->type == OP) printf ("\\left(");
                 fprintf (file, "\\frac{");
@@ -179,28 +111,28 @@ void Print (Node_t* node, FILE* file)
                 // printf ("\\right)");
                 break;
             }
-            case 'c':
+            case F_COS:
             {
                 fprintf (file, "\\cos\\left(");
                 Print (node->right, file);
                 fprintf (file, "\\right)");
                 break;
             }
-            case 's':
+            case F_SIN:
             {
                 fprintf (file, "\\sin\\left(");
                 Print (node->right, file);
                 fprintf (file, "\\right)");
                 break;
             }
-            case 'l':
+            case F_LN:
             {
                 fprintf (file, "\\ln\\left(");
                 Print (node->right, file);
                 fprintf (file, "\\right)");
                 break;
             }
-            case '^':
+            case F_DEG:
             {
                 fprintf (file, "\\left(");
                 Print (node->left, file);
@@ -218,241 +150,13 @@ void Print (Node_t* node, FILE* file)
     }
 }
 
-void Calculation (Node_t* node) // TODO постараться откопипастить
-{
-    if (!node) return;
-    
-    if (node->left->left) Calculation (node->left);
-    if (node->right->left) Calculation (node->right);
-
-    if (node->type == OP && node->left->type == NUM && node->right->type == NUM)
-    {
-        switch ((int) node->value) 
-        {
-            case '+':
-            {
-                node->value = node->left->value + node->right->value;
-                break;
-            }
-            case '-':
-            {
-                node->value = node->left->value - node->right->value;
-                break;
-            }
-            case '*':
-            {
-                node->value = node->left->value * node->right->value;
-                break;
-            }
-            case '/':
-            {
-                node->value = node->left->value / node->right->value;
-                break;
-            }
-            case '^':
-            {
-                node->value = pow (node->left->value, node->right->value);
-                break;
-            }
-            default: printf ("er\n");
-        }
-        node->type = NUM;
-        NodeDtor (node->left);
-        NodeDtor (node->right);
-        node->left = NULL;
-        node->right = NULL;
-    }
-    if (node->type == OP && (int) node->value == '*')
-    {
-        if ((node->left->type == NUM && (int) node->left->value == 0) || 
-            (node->right->type == NUM && (int) node->right->value == 0)) // *0 0*
-        {
-            node->type = NUM;
-            node->value = 0;
-            NodeDtor (node->left);
-            NodeDtor (node->right);
-            node->left = NULL;
-            node->right = NULL;
-        }
-        else if (node->left->type == NUM && (int) node->left->value == 1) // 1*
-        {
-            node->type = node->right->type;
-            node->value = node->right->value;
-
-            Node_t* new_left = NULL;
-            Node_t* new_right = NULL;
-            if (node->right->right) 
-                new_right = CopyNode (node->right->right);
-            if (node->right->left)
-                new_left = CopyNode (node->right->left);
-            
-            NodeDtor (node->left);
-            NodeDtor (node->right);
-            node->left = new_left;
-            node->right = new_right; 
-        }
-        else if (node->right->type == NUM && (int) node->right->value == 1) // *1
-        {
-            node->type = node->left->type;
-            node->value = node->left->value;
-
-            Node_t* new_left = NULL;
-            Node_t* new_right = NULL;
-            if (node->left->right) 
-                new_right = CopyNode (node->left->right);
-            if (node->left->left)
-                new_left = CopyNode (node->left->left);
-            
-            NodeDtor (node->left);
-            NodeDtor (node->right);
-            node->left = new_left;
-            node->right = new_right;         
-        }
-    }
-    if (node->type == OP && (int) node->value == '+')
-    {
-        if (node->left->type == NUM && (int) node->left->value == 0) // 0+
-        {
-            node->type = node->right->type;
-            node->value = node->right->value;
-
-            Node_t* new_left = NULL;
-            Node_t* new_right = NULL;
-            if (node->right->right) 
-                new_right = CopyNode (node->right->right);
-            if (node->right->left)
-                new_left = CopyNode (node->right->left);
-            
-            NodeDtor (node->left);
-            NodeDtor (node->right);
-            node->left = new_left;
-            node->right = new_right; 
-        }
-        else if (node->right->type == NUM && (int) node->right->value == 0) // +0
-        {
-            node->type = node->left->type;
-            node->value = node->left->value;
-
-            Node_t* new_left = NULL;
-            Node_t* new_right = NULL;
-            if (node->left->right) 
-                new_right = CopyNode (node->left->right);
-            if (node->left->left)
-                new_left = CopyNode (node->left->left);
-            
-            NodeDtor (node->left);
-            NodeDtor (node->right);
-            node->left = new_left;
-            node->right = new_right; 
-        }
-    }
-    if (node->type == OP && (int) node->value == '-')
-    {
-        if (node->right->type == NUM && (int) node->right->value == 0) // -0
-        {
-            node->type = node->left->type;
-            node->value = node->left->value;
-
-            Node_t* new_left = NULL;
-            Node_t* new_right = NULL;
-            if (node->left->right) 
-                new_right = CopyNode (node->left->right);
-            if (node->left->left)
-                new_left = CopyNode (node->left->left);
-            
-            NodeDtor (node->left);
-            NodeDtor (node->right);
-            node->left = new_left;
-            node->right = new_right; 
-        }
-    }
-    if (node->type == OP && (int) node->value == 'l')
-    {
-        if (node->right->type == MATH_CONST && (int) node->right->value == 'e')
-        {
-            node->type = NUM;
-            node->value = 1;
-            NodeDtor (node->right);
-            node->right = NULL; 
-        }
-    }
-    if (node->type == OP && (int) node->value == '^')
-    {
-        if (node->right->type == NUM && (int) node->right->value == 1)
-        {
-            node->type = node->left->type;
-            node->value = node->left->value;
-
-            Node_t* new_left = NULL;
-            Node_t* new_right = NULL;
-            if (node->left->right) 
-                new_right = CopyNode (node->left->right);
-            if (node->left->left)
-                new_left = CopyNode (node->left->left);
-            
-            NodeDtor (node->left);
-            NodeDtor (node->right);
-            node->left = new_left;
-            node->right = new_right;  
-        }
-        else if (node->left->type == NUM && (int) node->left->value == 1)
-        {
-            node->type = NUM;
-            node->value = 1;
-            NodeDtor (node->left);
-            NodeDtor (node->right);
-            node->left = NULL;
-            node->right = NULL;
-        }
-    }
-}
-//TODO разобраться с define (мб кодген)
-#define dl Diff(node->left, file)
-#define dr Diff(node->right, file)
-#define cl CopyNode(node->left)
-#define cr CopyNode(node->right)
-#define CONST(c) CreateNode (NUM, c, NULL, NULL)
-#define ADD(x,y) CreateNode (OP, '+', x, y)
-#define SUB(x,y) CreateNode (OP, '-', x, y)
-#define MUL(x,y) CreateNode (OP, '*', x, y)
-#define DIV(x,y) CreateNode (OP, '/', x, y)
-#define COS(x)   CreateNode (OP, 'c', NULL, x)
-#define SIN(x)   CreateNode (OP, 's', NULL, x)
-#define ST(x, y) CreateNode (OP, '^', x, y)
-#define LN(x) CreateNode (OP, 'l', NULL, x)
-#define EXP(x) CreateNode (OP, '^', CreateNode (MATH_CONST, 'e', NULL, NULL), x)
-
-Node_t* a = NULL;
-#define dl_ a = CopyNode (node->left); fprintf (file, "\\left("); Print (a, file); fprintf (file, "\\right)'"); NodeDtor (a)
-#define dr_ a = CopyNode (node->right); fprintf (file, "\\left("); Print (a, file); fprintf (file, "\\right)'"); NodeDtor (a)
-#define cl_ a = CopyNode (node->left); fprintf (file, "\\left("); Print (a, file); fprintf (file, "\\right)"); NodeDtor (a)
-#define cr_ a = CopyNode (node->right); fprintf (file, "\\left("); Print (a, file); fprintf (file, "\\right)"); NodeDtor (a)
-#define ADD_(x,y) {fprintf (file, "\\left("); x; fprintf (file, " + "); y; fprintf (file, "\\right)");}
-#define SUB_(x,y) {x; fprintf (file, " - "); y;}
-#define MUL_(x,y) {x; fprintf (file, " \\cdot "); y;}
-#define DIV_(x,y) {fprintf (file, "\\frac{"); x; fprintf (file, "}{"); y; fprintf (file, "}");}
-#define SIN_(x) {fprintf (file, "\\sin"); x;}
-#define COS_(x) {fprintf (file, "\\cos"); x;}
-#define ST_(x, y) {x; fprintf (file, "^"); fprintf (file, "{"); y; fprintf (file, "}");}
-#define LN_(x) {fprintf (file, "\\ln{"); x; fprintf (file, "}");}
-
-#define CONST_(x) fprintf (file, "%g' = %g", node->value, (double) x);
-#define M_(x) fprintf (file, "%g", (double) x);
-#define VAR_ fprintf (file, "\%c' = 1", (int) node->value);
-
-#define BEGIN fprintf (file, "\\text{Очень очевидно, что}\n\\begin{equation}\n\t")
-#define OPEN fprintf (file, "\\left(")
-#define CLOSE fprintf (file, "\\right)")
-#define PRO fprintf (file, "'")
-#define EQUALLY fprintf (file, "=")
-#define END fprintf (file, "\n\\end{equation}\n")
-
 Node_t* Diff (Node_t* node, FILE* file)
 {
+    Node_t* general_node = NULL;
     if (node->type == NUM)
     {
         Node_t* node1 = CONST (0);
-        BEGIN; CONST_(0); END;
+        BEGIN; CONST_TEX(0); END;
         return node1;
     }
     if (node->type == MATH_CONST)
@@ -464,74 +168,75 @@ Node_t* Diff (Node_t* node, FILE* file)
     if (node->type == VAR)
     {
         Node_t* node2 = CONST (1);
-        BEGIN; VAR_; END;       
+        BEGIN; VAR_TEX; END;       
         return node2;
     }
     if (node->type == OP)
     {
         switch ((int) node->value)
         {
-            case '+':
+            case F_ADD:
             {
-                BEGIN; OPEN; ADD_ (cl_, cr_); CLOSE; PRO; 
-                EQUALLY; ADD_ (dl_, dr_); END;
+                BEGIN; OPEN; ADD_TEX (cl_tex, cr_tex); CLOSE; PRO; 
+                EQUALLY; ADD_TEX (dl_tex, dr_tex); END;
                 return ADD (dl, dr);
                 break;
             }
-            case '-':
+            case F_SUB:
             {
-                BEGIN; OPEN; SUB_ (cl_, cr_); CLOSE; PRO;
-                EQUALLY; SUB_ (dl_, dr_); END;
+                BEGIN; OPEN; SUB_TEX (cl_tex, cr_tex); CLOSE; PRO;
+                EQUALLY; SUB_TEX (dl_tex, dr_tex); END;
                 return SUB (dl, dr);
                 break;
             }
-            case '*':
+            case F_MUL:
             {
-                BEGIN; OPEN; MUL_ (cl_, cr_); CLOSE; PRO;
-                EQUALLY; ADD_ (MUL_ (dl_, cr_), MUL_ (cl_, dr_)); END;
+                BEGIN; OPEN; MUL_TEX (cl_tex, cr_tex); CLOSE; PRO;
+                EQUALLY; ADD_TEX (MUL_TEX (dl_tex, cr_tex), MUL_TEX (cl_tex, dr_tex)); END;
                 return ADD (MUL (dl, cr), MUL (cl, dr));
                 break;
             }
-            case '/':
+            case F_DIV:
             {
-                BEGIN; OPEN; DIV_ (cl_, cr_); CLOSE; PRO;
-                EQUALLY; DIV_ (SUB_(MUL_ (dl_, cr_), MUL_ (cl_, dr_)), ST_ (cr_, M_(2))); END;
+                BEGIN; OPEN; DIV_TEX (cl_tex, cr_tex); CLOSE; PRO;
+                EQUALLY; DIV_TEX (SUB_TEX (MUL_TEX (dl_tex, cr_tex), MUL_TEX (cl_tex, dr_tex)), ST_TEX (cr_tex, NUMBER_TEX(2))); END;
                 return DIV (SUB(MUL (dl, cr), MUL (cl, dr)), ST (cr, CONST (2)));
                 break;
             }
-            case 'c':
+            case F_COS:
             {
-                BEGIN; OPEN; COS_ (cr_); CLOSE; PRO;
-                EQUALLY; MUL_ (MUL_ (M_(-1) , SIN_ (cr_)), dr_); END;
+                BEGIN; OPEN; COS_TEX (cr_tex); CLOSE; PRO;
+                EQUALLY; MUL_TEX (MUL_TEX (NUMBER_TEX(-1) , SIN_TEX (cr_tex)), dr_tex); END;
                 return MUL (MUL (CONST (-1), SIN (cr)), dr);
                 break;
             }
-            case 's':
+            case F_SIN:
             {
-                BEGIN; OPEN; SIN_ (cr_); CLOSE; PRO;
-                EQUALLY; MUL_ (COS_ (cr_), dr_); END;
-                return MUL (COS (cr), dr);
+                BEGIN; OPEN; SIN_TEX (cr_tex); CLOSE; PRO;
+                EQUALLY; MUL_TEX (dr_tex, COS_TEX (cr_tex)); END;
+                return MUL (dr, COS (cr));
                 break;
             }
-            case 'l':
+            case F_LN:
             {
-                BEGIN; OPEN; LN_ (cr_); CLOSE; PRO;
-                EQUALLY; MUL_ (DIV_ (M_ (1), cr_), dr_); END;
+                BEGIN; OPEN; LN_TEX (cr_tex); CLOSE; PRO;
+                EQUALLY; MUL_TEX (DIV_TEX (NUMBER_TEX (1), cr_tex), dr_tex); END;
                 return MUL (DIV (CONST (1), cr), dr);
                 break;
             }
-            case '^':
+            case F_DEG:
             {
                 if (node->right->type == NUM)
                 {
                     double poc = node->right->value;
-                    BEGIN; OPEN; ST_ (cl_, cr_); CLOSE; PRO;
-                    EQUALLY; MUL_ (MUL_ (M_(poc), ST_ (cl_, M_(poc-1))), dl_); END;
+                    BEGIN; OPEN; ST_TEX (cl_tex, cr_tex); CLOSE; PRO;
+                    EQUALLY; MUL_TEX (MUL_TEX (NUMBER_TEX (poc), ST_TEX (cl_tex, NUMBER_TEX (poc-1))), dl_tex); END;
                     return MUL (MUL (CONST (poc), ST (cl, CONST (poc - 1))), dl);
                 }
-                else {
-                    BEGIN; OPEN; ST_ (cl_, cr_); CLOSE; PRO;
-                    EQUALLY; MUL_ (ST_ (cl_, cr_), ADD_ (MUL_ (dr_, LN_(cl_)), MUL_(cr_, MUL_ (DIV_ (M_(1), cl_), dl_)))); END;
+                else 
+                {
+                    BEGIN; OPEN; ST_TEX (cl_tex, cr_tex); CLOSE; PRO;
+                    EQUALLY; MUL_TEX (ST_TEX (cl_tex, cr_tex), ADD_TEX (MUL_TEX (dr_tex, LN_TEX(cl_tex)), MUL_TEX(cr_tex, MUL_TEX (DIV_TEX (NUMBER_TEX(1), cl_tex), dl_tex)))); END;
                     return MUL (ST (cl, cr), ADD (MUL (dr, LN (cl)), MUL (cr, MUL (DIV (CONST (1), cl), dl))));
                 }
                 break;
@@ -546,7 +251,7 @@ Node_t* CopyNode (Node_t* node)
 {
     if (node->type == NUM || node->type == VAR || node->type == MATH_CONST)
     {
-        Node_t* new_node = CreateNode (node->type, node->value, node->left, node->right);
+        Node_t* new_node = NodeCtor (node->type, node->value, node->left, node->right);
         assert (new_node);
 
         return new_node;
@@ -555,20 +260,20 @@ Node_t* CopyNode (Node_t* node)
     {
         switch ((int) node->value)
         {
-            case '+':
-            case '-':
-            case '*':
-            case '/':
-            case '^':
+            case F_ADD:
+            case F_SUB:
+            case F_MUL:
+            case F_DIV:
+            case F_DEG:
             {
-                return CreateNode (OP, node->value, CopyNode (node->left), CopyNode (node->right));
+                return NodeCtor (OP, node->value, CopyNode (node->left), CopyNode (node->right));
                 break;
             }
-            case 'c':
-            case 's':
-            case 'l':
+            case F_COS:
+            case F_SIN:
+            case F_LN:
             {
-                return CreateNode (OP, node->value, NULL, CopyNode (node->right));
+                return NodeCtor (OP, node->value, NULL, CopyNode (node->right));
                 break;
             }
             default: break;

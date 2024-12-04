@@ -2,9 +2,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include "Differentiator_func.h"
 
-Node_t** CreateTokens (char* str);
+#include "Differentiator_func.h"
 
 void ReadDataBase (Tree_t* tree)
 {
@@ -25,10 +24,10 @@ void ReadDataBase (Tree_t* tree)
 Node_t** CreateTokens (char* s)
 {
     int t = 0;
-    Node_t** array = (Node_t**) calloc (100, sizeof (Node_t*));
-    for (int i = 0; i < 100; i++)
+    Node_t** array = (Node_t**) calloc (SIZE_ARRAY, sizeof (Node_t*));
+    for (int i = 0; i < SIZE_ARRAY; i++)
     {
-        array[i] = CreateNode (0, 0, NULL, NULL);
+        array[i] = NodeCtor (0, 0, NULL, NULL);
     }
 
     int y = 0;
@@ -47,33 +46,16 @@ Node_t** CreateTokens (char* s)
         }
         else if (('a' <= s[t] && s[t] <= 'z') || ('A' <= s[t] && s[t] <= 'Z'))
         {
-            char com[10] = "";
+            char com[LEN_STR] = "";
             int n = 0;
             sscanf (s + t, "%[a-zA-Z]%n", com, &n);
-            if (!strcmp (com, "sin")) // TODO в отдельную функцию сравнения + сделать массив команд
-            {
-                array[y]->type = OP;
-                array[y]->value = 's';
-            }
-            else if (!strcmp (com, "cos"))
-            {
-                array[y]->type = OP;
-                array[y]->value = 'c';
-            }
-            else if (!strcmp (com, "ln"))
-            {
-                array[y]->type = OP;
-                array[y]->value = 'l';
-            }
-            else if (!strcmp (com, "x"))
-            {
-                array[y]->type = VAR;
-                array[y]->value = 'x';
-            }
-            else
-            {
-                printf ("ERR\n");
-            }
+            
+            int com_type = 0;
+            int com_value = 0;
+            FindCommand (com, &com_type, &com_value);
+
+            array[y]->type = com_type;
+            array[y]->value = com_value;
             y++;
             t += n;
         }
@@ -101,9 +83,15 @@ Node_t** CreateTokens (char* s)
     return array;
 }
 
+#define DEF_CMD(name, str, type, value) if (!strcmp(str, com)) {*com_type = type; *com_value = value;}
+void FindCommand (char* com, int* com_type, int* com_value)
+{
+    #include "commands.h"
+}
+#undef DEF_CMD
+
 Node_t* GetG (int* pointer, Node_t** array)
 {
-
     Node_t* value = GetE (pointer, array);
     if ((int) array[*pointer]->value != '$')
         assert (0);
@@ -121,7 +109,7 @@ Node_t* GetE (int* pointer, Node_t** array)
 {
     Node_t* value = GetT (pointer, array);
 
-    while (array[*pointer]->type == OP && ((int) array[*pointer]->value == '+' || (int) array[*pointer]->value == '-'))
+    while (array[*pointer]->type == OP && ((int) array[*pointer]->value == F_ADD || (int) array[*pointer]->value == F_SUB))
     {
         int num = *pointer;
         (*pointer)++;
@@ -137,7 +125,7 @@ Node_t* GetT (int* pointer, Node_t** array)
 {
     Node_t* value = GetS (pointer, array);
 
-    while (array[*pointer]->type == OP && ((int) array[*pointer]->value == '*' || (int) array[*pointer]->value == '/'))
+    while (array[*pointer]->type == OP && ((int) array[*pointer]->value == F_MUL || (int) array[*pointer]->value == F_DIV))
     {
         int num = *pointer;
         (*pointer)++;
@@ -155,7 +143,7 @@ Node_t* GetS (int* pointer, Node_t** array)
 {
     Node_t* value = GetP (pointer, array);
 
-    if (array[*pointer]->type == OP && (int) array[*pointer]->value == '^')
+    if (array[*pointer]->type == OP && (int) array[*pointer]->value == F_DEG)
     {
         int num = *pointer;
         (*pointer)++;
@@ -170,16 +158,16 @@ Node_t* GetS (int* pointer, Node_t** array)
 
 Node_t* GetP (int* pointer, Node_t** array)
 {
-    if (array[*pointer]->type == OP && (int) array[*pointer]->value == '(')
+    if (array[*pointer]->type == OP && (int) array[*pointer]->value == F_OPEN)
     {
         (*pointer)++;
         Node_t* value = GetE (pointer, array);
-        if ((int) array[*pointer]->value != ')')
+        if ((int) array[*pointer]->value != F_CLOSE)
             assert (0);
         (*pointer)++;
         return value;
     }
-    else if (array[*pointer]->type == OP && (int) array[*pointer]->value == 'c')
+    else if (array[*pointer]->type == OP && (int) array[*pointer]->value == F_COS)
     {
         int num = *pointer;
         (*pointer)++;
@@ -187,7 +175,7 @@ Node_t* GetP (int* pointer, Node_t** array)
         array[num]->right = value;
         return array[num];
     }
-    else if (array[*pointer]->type == OP && (int) array[*pointer]->value == 's')
+    else if (array[*pointer]->type == OP && (int) array[*pointer]->value == F_SIN)
     {
         int num = *pointer;
         (*pointer)++;
@@ -195,7 +183,7 @@ Node_t* GetP (int* pointer, Node_t** array)
         array[num]->right = value;
         return array[num];
     }
-    else if (array[*pointer]->type == OP && (int) array[*pointer]->value == 'l')
+    else if (array[*pointer]->type == OP && (int) array[*pointer]->value == F_LN)
     {
         int num = *pointer;
         (*pointer)++;

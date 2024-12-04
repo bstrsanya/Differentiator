@@ -1,24 +1,13 @@
-// DEF_CMD(ADD, "+", 43, {CreateNode (OP, '+', })
-
-// DEF_CMD(SUB, "-", 45, {Node_t* node1 = NULL; 
-//                    StackPop (stk, &node1);
-//                    Node_t* node2 = NULL; 
-//                    StackPop (stk, &node2);
-//                    node1->value = node2->value - node1->value;
-//                    StackPush (stk, node1); })
-
-// DEF_CMD(MUL, "*", 42, {Node_t* node1 = NULL; 
-//                    StackPop (stk, &node1);
-//                    Node_t* node2 = NULL; 
-//                    StackPop (stk, &node2);
-//                    node1->value *= node2->value;
-//                    StackPush (stk, node1); })
-
-// DEF_CMD(DIV, "/", 47, {Node_t* node1 = NULL; 
-//                    StackPop (stk, &node1);
-//                    Node_t* node2 = NULL; 
-//                    StackPop (stk, &node2);
-//                    node1->value = node2->value / node1->value;
-//                    StackPush (stk, node1); })
-
+DEF_CMD(F_COS, "cos", OP, 99)
+DEF_CMD(F_SIN, "sin", OP, 115)
+DEF_CMD(F_LN, "ln", OP, 108)
+DEF_CMD(F_ADD, "+", OP, 43)
+DEF_CMD(F_SUB, "-", OP, 45)
+DEF_CMD(F_MUL, "*", OP, 42)
+DEF_CMD(F_DIV, "/", OP, 47)
+DEF_CMD(F_DEG, "^", OP, 94)
+DEF_CMD(F_VAR, "x", VAR, 120)
+DEF_CMD(F_OPEN, "(", OP, 40)
+DEF_CMD(F_CLOSE, ")", OP, 41)
+DEF_CMD(F_E, "e", MATH_CONST, 101)
 
