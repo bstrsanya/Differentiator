@@ -233,6 +233,12 @@ Node_t* Diff (Node_t* node, FILE* file)
                     EQUALLY; MUL_TEX (MUL_TEX (NUMBER_TEX (poc), ST_TEX (cl_tex, NUMBER_TEX (poc-1))), dl_tex); END;
                     return MUL (MUL (CONST (poc), ST (cl, CONST (poc - 1))), dl);
                 }
+                else if (node->left->type == MATH_CONST && (int) node->left->value == F_E)
+                {
+                    BEGIN; OPEN; EXP_TEX (cr_tex); CLOSE; PRO;
+                    EQUALLY; MUL_TEX (EXP_TEX (cr_tex), dr_tex); END;
+                    return MUL (EXP (cr), dr);
+                }
                 else 
                 {
                     BEGIN; OPEN; ST_TEX (cl_tex, cr_tex); CLOSE; PRO;

@@ -58,8 +58,8 @@ void CalculationMul (Node_t* node)
 {
     if (node->type == OP && (int) node->value == F_MUL)
     {
-        if ((node->left->type == NUM && (int) node->left->value == 0) || 
-            (node->right->type == NUM && (int) node->right->value == 0)) // *0 0*
+        if ((node->left->type == NUM && CompareDouble (node->left->value, 0)) || 
+            (node->right->type == NUM && CompareDouble (node->right->value, 0))) // *0 0*
         {
             node->type = NUM;
             node->value = 0;
@@ -203,3 +203,10 @@ void CalculationDeg (Node_t* node)
     }
 }
 
+int CompareDouble (double argument_1, double argument_2)
+{
+    if (fabs (argument_1 - argument_2) < SMALL)
+        return true;
+         
+    return false;
+}

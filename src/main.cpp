@@ -9,8 +9,8 @@ int main ()
     Tree_t tree = {};
     TreeCtor (&tree, file_expression);
 
-    tree.expression_diff = Diff (tree.expression, tree.output);
     CreateTex (&tree);
+    tree.expression_diff = Diff (tree.expression, tree.output);
     Calculation (tree.expression_diff);
     PutAnswerTex (&tree);
 

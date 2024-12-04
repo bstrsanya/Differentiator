@@ -9,6 +9,7 @@ const int SIZE_ARRAY = 100;
 const int LEN_STR    = 10;
 const char file_expression[] = "primer.txt";
 const char file_latex[]      = "dif.tex";
+const double SMALL    = 10e-8;
 
 enum type
 {
@@ -54,6 +55,7 @@ void CalculationDeg (Node_t* node);
 void CalculationAdd (Node_t* node);
 void CalculationSub (Node_t* node);
 void CalculationMul (Node_t* node);
+int CompareDouble (double argument_1, double argument_2);
 
 // latex
 void CreateTex (Tree_t* tree);

@@ -28,12 +28,13 @@
 #define SIN_TEX(x)   {fprintf (file, "\\sin"); x;}
 #define COS_TEX(x)   {fprintf (file, "\\cos"); x;}
 #define LN_TEX(x)    {fprintf (file, "\\ln{"); x; fprintf (file, "}");}
+#define EXP_TEX(x)   {fprintf (file, "e^{"); x; fprintf (file, "}");}
 
 #define CONST_TEX(x)  fprintf (file, "%g' = %g", node->value, (double) x)
 #define NUMBER_TEX(x) fprintf (file, "%g", (double) x)
 #define VAR_TEX       fprintf (file, "\%c' = 1", (int) node->value)
 
-#define BEGIN fprintf (file, "\\text{Очень очевидно, что}\n\\begin{equation}\n\t")
+#define BEGIN fprintf (file, "\\text{Understand that,}\n\\begin{equation}\n\t")
 #define OPEN fprintf (file, "\\left(")
 #define CLOSE fprintf (file, "\\right)")
 #define PRO fprintf (file, "'")
