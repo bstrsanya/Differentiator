@@ -10,7 +10,7 @@ Node_t* NodeCtor (int type, double value, Node_t* left, Node_t* right)
     Node_t* new_node = (Node_t*) calloc (1, sizeof (Node_t));
     assert (new_node);
 
-    new_node->type = type;
+    new_node->type = (type_com) type;
     new_node->value = value;
 
     new_node->left = left;
@@ -38,15 +38,29 @@ void TreeCtor (Tree_t* tree, const char* name_file)
     ReadDataBase (tree);
     fclose (tree->input);
 
-    tree->output = fopen (file_latex, "wb");
+    tree->output = fopen (FILE_LATEX, "wb");
 }
 
 void TreeDtor (Tree_t* tree)
 {
     assert (tree);
 
-    for (int i = 0; i < SIZE_ARRAY; i++)
-        free (tree->array[i]);
+    NodeDtor (tree->expression);
+    // for (int y = SIZE_ARRAY - 1; y != 0; y--)
+    // {
+    //     if ((int) tree->array[y]->value != '$')
+    //         free (tree->array[y]);
+    //     else
+    //     {
+    //         free (tree->array[y]);
+    //         break;
+    //     }
+    // } 
+    // for (int i = 0; i < SIZE_ARRAY; i++)
+    // {
+    //     if (tree->array[i])
+    //         free (tree->array[i]);
+    // }
 
     free (tree->array);
     NodeDtor (tree->expression_diff);
@@ -150,25 +164,41 @@ void Print (Node_t* node, FILE* file)
     }
 }
 
+void Differentiator (Tree_t* tree)
+{
+    int n = 0;
+    Calculation (tree->expression, &n);
+
+    if (n)
+    {
+        fprintf (tree->output, "\\text{Для начала упростим функцию}\n");
+        fprintf (tree->output, "\\[f(x) = ");
+        Print (tree->expression, tree->output);
+        fprintf (tree->output, "\\]\n");
+    }
+    PrintDot (tree->expression);
+    tree->expression_diff = Diff (tree->expression, tree->output);
+    Calculation (tree->expression_diff, &n);
+}
+
 Node_t* Diff (Node_t* node, FILE* file)
 {
-    Node_t* general_node = NULL;
     if (node->type == NUM)
     {
         Node_t* node1 = CONST (0);
-        BEGIN; CONST_TEX(0); END;
+        NumTex (node, file);
         return node1;
     }
     if (node->type == MATH_CONST)
     {
         Node_t* node10 = CONST (0);
-        BEGIN; fprintf (file, "%c' = 0", (int) node->value); END;
+        MathConstTex (node, file);
         return node10;
     }
     if (node->type == VAR)
     {
         Node_t* node2 = CONST (1);
-        BEGIN; VAR_TEX; END;       
+        VarTex (node, file);  
         return node2;
     }
     if (node->type == OP)
@@ -177,72 +207,64 @@ Node_t* Diff (Node_t* node, FILE* file)
         {
             case F_ADD:
             {
-                BEGIN; OPEN; ADD_TEX (cl_tex, cr_tex); CLOSE; PRO; 
-                EQUALLY; ADD_TEX (dl_tex, dr_tex); END;
+                AddTex (node, file);
                 return ADD (dl, dr);
                 break;
             }
             case F_SUB:
             {
-                BEGIN; OPEN; SUB_TEX (cl_tex, cr_tex); CLOSE; PRO;
-                EQUALLY; SUB_TEX (dl_tex, dr_tex); END;
+                SubTex (node, file);
                 return SUB (dl, dr);
                 break;
             }
             case F_MUL:
             {
-                BEGIN; OPEN; MUL_TEX (cl_tex, cr_tex); CLOSE; PRO;
-                EQUALLY; ADD_TEX (MUL_TEX (dl_tex, cr_tex), MUL_TEX (cl_tex, dr_tex)); END;
+                MulTex (node, file);
                 return ADD (MUL (dl, cr), MUL (cl, dr));
                 break;
             }
             case F_DIV:
             {
-                BEGIN; OPEN; DIV_TEX (cl_tex, cr_tex); CLOSE; PRO;
-                EQUALLY; DIV_TEX (SUB_TEX (MUL_TEX (dl_tex, cr_tex), MUL_TEX (cl_tex, dr_tex)), ST_TEX (cr_tex, NUMBER_TEX(2))); END;
+                DivTex (node, file);
                 return DIV (SUB(MUL (dl, cr), MUL (cl, dr)), ST (cr, CONST (2)));
                 break;
             }
             case F_COS:
             {
-                BEGIN; OPEN; COS_TEX (cr_tex); CLOSE; PRO;
-                EQUALLY; MUL_TEX (MUL_TEX (NUMBER_TEX(-1) , SIN_TEX (cr_tex)), dr_tex); END;
+                CosTex (node, file);
                 return MUL (MUL (CONST (-1), SIN (cr)), dr);
                 break;
             }
             case F_SIN:
             {
-                BEGIN; OPEN; SIN_TEX (cr_tex); CLOSE; PRO;
-                EQUALLY; MUL_TEX (dr_tex, COS_TEX (cr_tex)); END;
+                SinTex (node, file);
                 return MUL (dr, COS (cr));
                 break;
             }
             case F_LN:
             {
-                BEGIN; OPEN; LN_TEX (cr_tex); CLOSE; PRO;
-                EQUALLY; MUL_TEX (DIV_TEX (NUMBER_TEX (1), cr_tex), dr_tex); END;
+                LnTex (node, file);
                 return MUL (DIV (CONST (1), cr), dr);
                 break;
             }
             case F_DEG:
             {
+                DegTex (node, file);
                 if (node->right->type == NUM)
                 {
                     double poc = node->right->value;
-                    BEGIN; OPEN; ST_TEX (cl_tex, cr_tex); CLOSE; PRO;
-                    EQUALLY; MUL_TEX (MUL_TEX (NUMBER_TEX (poc), ST_TEX (cl_tex, NUMBER_TEX (poc-1))), dl_tex); END;
                     return MUL (MUL (CONST (poc), ST (cl, CONST (poc - 1))), dl);
+                }
+                else if (node->left->type == NUM)
+                {
+                    return MUL (MUL (ST (cl, cr), LN (cl)), dr);
                 }
                 else if (node->left->type == MATH_CONST && (int) node->left->value == F_E)
                 {
-                    BEGIN; OPEN; EXP_TEX (cr_tex); CLOSE; PRO;
-                    EQUALLY; MUL_TEX (EXP_TEX (cr_tex), dr_tex); END;
                     return MUL (EXP (cr), dr);
                 }
                 else 
                 {
-                    BEGIN; OPEN; ST_TEX (cl_tex, cr_tex); CLOSE; PRO;
-                    EQUALLY; MUL_TEX (ST_TEX (cl_tex, cr_tex), ADD_TEX (MUL_TEX (dr_tex, LN_TEX(cl_tex)), MUL_TEX(cr_tex, MUL_TEX (DIV_TEX (NUMBER_TEX(1), cl_tex), dl_tex)))); END;
                     return MUL (ST (cl, cr), ADD (MUL (dr, LN (cl)), MUL (cr, MUL (DIV (CONST (1), cl), dl))));
                 }
                 break;

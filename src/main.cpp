@@ -7,11 +7,10 @@
 int main ()
 {
     Tree_t tree = {};
-    TreeCtor (&tree, file_expression);
+    TreeCtor (&tree, FILE_EXPRESSION);
 
     CreateTex (&tree);
-    tree.expression_diff = Diff (tree.expression, tree.output);
-    Calculation (tree.expression_diff);
+    Differentiator (&tree);
     PutAnswerTex (&tree);
 
     TreeDtor (&tree);

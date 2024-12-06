@@ -17,6 +17,12 @@ void ReadDataBase (Tree_t* tree)
     Node_t* value = GetG (&pointer, array);
     
     tree->expression = value;
+    // PrintDot (value);
+    for (int i = 0; i < SIZE_ARRAY; i++)
+    {
+        if ((int) array[i]->type == 0 || (int) array[i]->value == ')' || (int) array[i]->value == '(' || (int) array[i]->value == '$')
+            free (array[i]);
+    }
     tree->array = array;
     free (s);
 }
@@ -34,7 +40,7 @@ Node_t** CreateTokens (char* s)
 
     while (s[t] != '$')
     {
-        if (('0' <= s[t]) && (s[t] <= '9'))
+        if ((('0' <= s[t]) && (s[t] <= '9')) || s[t] == '-')
         {            
             double d = 0;
             int n = 0;
@@ -50,11 +56,11 @@ Node_t** CreateTokens (char* s)
             int n = 0;
             sscanf (s + t, "%[a-zA-Z]%n", com, &n);
             
-            int com_type = 0;
+            type_com com_type;
             int com_value = 0;
             FindCommand (com, &com_type, &com_value);
 
-            array[y]->type = com_type;
+            array[y]->type = (type_com) com_type;
             array[y]->value = com_value;
             y++;
             t += n;
@@ -83,12 +89,32 @@ Node_t** CreateTokens (char* s)
     return array;
 }
 
-#define DEF_CMD(name, str, type, value) if (!strcmp(str, com)) {*com_type = type; *com_value = value;}
-void FindCommand (char* com, int* com_type, int* com_value)
+Command_t array_command[] = {
+    {"cos", F_COS  , OP},
+    {"sin", F_SIN  , OP},
+    {"ln" , F_SIN  , OP},
+    {"+"  , F_ADD  , OP},
+    {"-"  , F_SUB  , OP},
+    {"*"  , F_MUL  , OP},
+    {"/"  , F_DIV  , OP},
+    {"^"  , F_DEG  , OP},
+    {"x"  , F_VAR  , VAR},
+    {"("  , F_OPEN , OP},
+    {")"  , F_CLOSE, OP},
+    {"e"  , F_E    , MATH_CONST}
+};
+
+void FindCommand (char* com, type_com* com_type, int* com_value)
 {
-    #include "commands.h"
+    for (int i = 0; i < NUM_COMMAND; i++)
+    {
+        if (!strcmp (array_command[i].name, com))
+        {
+            *com_type = array_command[i].t_com;
+            *com_value = array_command[i].n_com;
+        }
+    }
 }
-#undef DEF_CMD
 
 Node_t* GetG (int* pointer, Node_t** array)
 {

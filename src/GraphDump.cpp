@@ -63,5 +63,5 @@ void PrintDot (Node_t* node)
     CreateDotUSER (node, file_dot);
     fprintf (file_dot, "}");
     fclose (file_dot);
-    system ("dot ./aaa.dot -Tpng -o ./aaa.png");
+    system ("dot ./aaa.dot -Tpng -o ./test_example2.png");
 }
