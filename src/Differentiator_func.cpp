@@ -64,7 +64,9 @@ void TreeDtor (Tree_t* tree)
 
     free (tree->array);
     NodeDtor (tree->expression_diff);
-    fclose (tree->output);
+
+    if (tree->output)
+        fclose (tree->output);
 }
 
 void Print (Node_t* node, FILE* file)
@@ -139,6 +141,20 @@ void Print (Node_t* node, FILE* file)
                 fprintf (file, "\\right)");
                 break;
             }
+            case F_TAN:
+            {
+                fprintf (file, "\\tg\\left(");
+                Print (node->right, file);
+                fprintf (file, "\\right)");
+                break;
+            }
+            case F_CTG:
+            {
+                fprintf (file, "\\ctg\\left(");
+                Print (node->right, file);
+                fprintf (file, "\\right)");
+                break;
+            }
             case F_LN:
             {
                 fprintf (file, "\\ln\\left(");
@@ -157,6 +173,7 @@ void Print (Node_t* node, FILE* file)
             }
             default:
             {
+                // printf ("%g \t %d\n", node->value, node->type);
                 printf ("ERERR\n");
                 break;
             }
@@ -176,7 +193,7 @@ void Differentiator (Tree_t* tree)
         Print (tree->expression, tree->output);
         fprintf (tree->output, "\\]\n");
     }
-    PrintDot (tree->expression);
+
     tree->expression_diff = Diff (tree->expression, tree->output);
     Calculation (tree->expression_diff, &n);
 }
@@ -250,6 +267,7 @@ Node_t* Diff (Node_t* node, FILE* file)
             case F_DEG:
             {
                 DegTex (node, file);
+
                 if (node->right->type == NUM)
                 {
                     double poc = node->right->value;
@@ -267,6 +285,18 @@ Node_t* Diff (Node_t* node, FILE* file)
                 {
                     return MUL (ST (cl, cr), ADD (MUL (dr, LN (cl)), MUL (cr, MUL (DIV (CONST (1), cl), dl))));
                 }
+                break;
+            }
+            case F_TAN:
+            {
+                TanTex (node, file);
+                return MUL (DIV (CONST (1), ST (COS (cr), CONST (2))), dr);
+                break;
+            }
+            case F_CTG:
+            {
+                CtgTex (node, file);
+                return MUL (DIV (CONST (-1), ST (SIN (cr), CONST (2))), dr);
                 break;
             }
             default: break;
@@ -300,6 +330,8 @@ Node_t* CopyNode (Node_t* node)
             case F_COS:
             case F_SIN:
             case F_LN:
+            case F_CTG:
+            case F_TAN:
             {
                 return NodeCtor (OP, node->value, NULL, CopyNode (node->right));
                 break;

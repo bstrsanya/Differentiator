@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "Differentiator_func.h"
 
@@ -87,4 +88,8 @@ void PutAnswerTex (Tree_t* tree)
     Print (tree->expression_diff, tree->output); 
     fprintf (tree->output, "\\]\n");
     fprintf (tree->output, "\\end{solution}\\end{homework}\\end{document}\n");
+    fclose (tree->output);
+    tree->output = NULL;
+
+    system ("lualatex --output-directory=" DIR " "INPUT " " OUTPUT ">/dev/null");
 }

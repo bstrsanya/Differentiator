@@ -40,7 +40,7 @@ Node_t** CreateTokens (char* s)
 
     while (s[t] != '$')
     {
-        if ((('0' <= s[t]) && (s[t] <= '9')) || s[t] == '-')
+        if ((('0' <= s[t]) && (s[t] <= '9')) || (s[t] == '-' && (y == 0 || (int)array[y - 1]->value == F_OPEN)))
         {            
             double d = 0;
             int n = 0;
@@ -79,6 +79,10 @@ Node_t** CreateTokens (char* s)
             t++;
             y++;
         }
+        else if (s[t] == ' ')
+        {
+            t++;
+        }
         else
         {
             printf ("ER\n");
@@ -92,7 +96,9 @@ Node_t** CreateTokens (char* s)
 Command_t array_command[] = {
     {"cos", F_COS  , OP},
     {"sin", F_SIN  , OP},
-    {"ln" , F_SIN  , OP},
+    {"tg" , F_TAN  , OP},
+    {"ctg", F_CTG  , OP},
+    {"ln" , F_LN  , OP},
     {"+"  , F_ADD  , OP},
     {"-"  , F_SUB  , OP},
     {"*"  , F_MUL  , OP},
@@ -210,6 +216,22 @@ Node_t* GetP (int* pointer, Node_t** array)
         return array[num];
     }
     else if (array[*pointer]->type == OP && (int) array[*pointer]->value == F_LN)
+    {
+        int num = *pointer;
+        (*pointer)++;
+        Node_t* value = GetP (pointer, array);
+        array[num]->right = value;
+        return array[num];
+    }
+    else if (array[*pointer]->type == OP && (int) array[*pointer]->value == F_TAN)
+    {
+        int num = *pointer;
+        (*pointer)++;
+        Node_t* value = GetP (pointer, array);
+        array[num]->right = value;
+        return array[num];
+    }
+    else if (array[*pointer]->type == OP && (int) array[*pointer]->value == F_CTG)
     {
         int num = *pointer;
         (*pointer)++;

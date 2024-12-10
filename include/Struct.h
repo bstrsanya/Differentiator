@@ -30,6 +30,8 @@ enum command
 {
     F_COS   = 99,
     F_SIN   = 115,
+    F_TAN   = 97,
+    F_CTG   = 98,
     F_LN    = 108,
     F_ADD   = 43,
     F_SUB   = 45,

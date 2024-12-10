@@ -8,7 +8,9 @@
 const char* const phrases[] = {
     "Очевидно, что",
     "На первой лекции было",
-    "Каждый уважающий себе человек знает, что"
+    "Каждый уважающий себе человек знает, что",
+    "Любое животное способно сказать чему равно это",
+    "Гадалка утверждает, что",
 };
 
 void AddTex (Node_t* node, FILE* file)
@@ -150,6 +152,38 @@ void LnTex (Node_t* node, FILE* file)
     Print (node->right, file);
     fprintf (file, "\\right)'");
     fprintf (file, "\n\\end{equation}\n"); 
+}
+
+void TanTex (Node_t* node, FILE* file)
+{    
+    RandomStr (file);
+    fprintf (file, "\n\\begin{equation}\n\t\\left(");
+    
+    fprintf (file, "\\tg{\\left(");
+    Print (node->right, file);
+    fprintf (file, "\\right)}\\right)'= \\frac{1}{\\left(\\cos\\left(");
+
+    Print (node->right, file);
+    fprintf (file, "\\right)\\right)^2} \\cdot \\left(");
+    Print (node->right, file);
+    fprintf (file, "\\right)'");
+    fprintf (file, "\n\\end{equation}\n");
+}
+
+void CtgTex (Node_t* node, FILE* file)
+{    
+    RandomStr (file);
+    fprintf (file, "\n\\begin{equation}\n\t\\left(");
+    
+    fprintf (file, "\\ctg{\\left(");
+    Print (node->right, file);
+    fprintf (file, "\\right)}\\right)'= \\frac{-1}{\\left(\\sin\\left(");
+
+    Print (node->right, file);
+    fprintf (file, "\\right)\\right)^2} \\cdot \\left(");
+    Print (node->right, file);
+    fprintf (file, "\\right)'");
+    fprintf (file, "\n\\end{equation}\n");
 }
 
 void DegTex (Node_t* node, FILE* file)

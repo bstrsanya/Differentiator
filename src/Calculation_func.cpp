@@ -83,6 +83,16 @@ void SingleArgFunc (Node_t* node, int* n)
                 new_value = sin (node->right->value);
                 break;
             }
+            case F_TAN:
+            {
+                new_value = tan (node->right->value);
+                break;
+            }
+            case F_CTG:
+            {
+                new_value = 1 / tan (node->right->value);
+                break;
+            }
             case F_LN:
             {
                 if (node->right->value < 0)
@@ -95,7 +105,7 @@ void SingleArgFunc (Node_t* node, int* n)
             }
             default:
             {
-                printf ("ERROR\n");
+                printf ("%d %g ERROR\n", node->type, node->value);
                 break;
             }
         }

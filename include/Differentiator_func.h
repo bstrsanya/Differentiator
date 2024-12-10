@@ -5,14 +5,17 @@
 #include "SizeFile.h"
 #include "Struct.h"
 
+#define INPUT "./output/dif.tex"
+#define OUTPUT "./output/dif.pdf"
+#define DIR "output"
 
 const int SIZE_ARRAY = 100;
 const int LEN_STR    = 10;
 const char FILE_EXPRESSION[] = "test_example.txt";
-const char FILE_LATEX[]      = "dif.tex";
+const char FILE_LATEX[]      = INPUT;
 const double SMALL    = 10e-8;
 const int NUM_COMMAND = 12;
-const int NUM_PHRASES = 3;
+const int NUM_PHRASES = 5;
 
 // differentiator
 Node_t* NodeCtor (int type, double value, Node_t* left, Node_t* right);
@@ -58,6 +61,8 @@ void MulTex (Node_t* node, FILE* file);
 void DivTex (Node_t* node, FILE* file);
 void SinTex (Node_t* node, FILE* file);
 void CosTex (Node_t* node, FILE* file);
+void TanTex (Node_t* node, FILE* file);
+void CtgTex (Node_t* node, FILE* file);
 void LnTex  (Node_t* node, FILE* file);
 void DegTex (Node_t* node, FILE* file);
 void NumTex (Node_t* node, FILE* file);
