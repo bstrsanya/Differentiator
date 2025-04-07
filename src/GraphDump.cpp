@@ -54,14 +54,18 @@ void CreateDotUSER (Node_t* node, FILE* file_dot)
     }
 }
 
-void PrintDot (Node_t* node)
+void PrintDot (Node_t* node,  const char* str)
 {
-    FILE* file_dot = fopen ("./aaa.dot", "w");
+    char buf[100] = "";
+    sprintf (buf, "./output/%s.dot", str);
+    FILE* file_dot = fopen (buf, "w");
     assert (file_dot != NULL);
     // fprintf (file_dot, "digraph{\nsplines=\"ortho\";\n");
     fprintf (file_dot, "digraph{\n");
     CreateDotUSER (node, file_dot);
     fprintf (file_dot, "}");
     fclose (file_dot);
-    system ("dot ./aaa.dot -Tpng -o ./test_example2.png");
+    char buff[100] = {};
+    sprintf (buff, "dot ./output/%s.dot -Tpng -o ./output/%s.png", str, str); 
+    system (buff);
 }

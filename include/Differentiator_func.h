@@ -1,7 +1,7 @@
 #ifndef FUNC_H
 #define FUNC_H
 
-#include "Readfile.h"
+#include "ReadFile.h"
 #include "SizeFile.h"
 #include "Struct.h"
 
@@ -52,7 +52,7 @@ void PutAnswerTex (Tree_t* tree);
 
 // graph dump
 void CreateDot (Node_t* node, FILE* file_dot);
-void PrintDot (Node_t* node);
+void PrintDot (Node_t* node,  const char* str);
 void CreateDotUSER (Node_t* node, FILE* file_dot);
 
 void AddTex (Node_t* node, FILE* file);

@@ -66,9 +66,11 @@ void MulTex (Node_t* node, FILE* file)
     RandomStr (file);
     fprintf (file, "\n\\begin{equation}\n\t\\left(");
 
-    Print (node->left, file);
-    fprintf (file, " \\cdot ");
-    Print (node->right, file);
+    // Print (node->left, file);
+    // fprintf (file, " \\cdot ");
+    // Print (node->right, file);
+
+    Print (node, file);
 
     fprintf (file, "\\right)'=");
 
@@ -118,9 +120,9 @@ void CosTex (Node_t* node, FILE* file)
     fprintf (file, "\\right)}\\right)'= (-1) \\cdot \\left(");
 
     Print (node->right, file);
-    fprintf (file, "\\right)' \\cdot \\sin{");
+    fprintf (file, "\\right)' \\cdot \\sin{\\left(");
     Print (node->right, file);
-    fprintf (file, "}\n\\end{equation}\n");
+    fprintf (file, "\\right)}\n\\end{equation}\n");
 }
 
 void SinTex (Node_t* node, FILE* file)
@@ -133,9 +135,9 @@ void SinTex (Node_t* node, FILE* file)
     fprintf (file, "\\right)}\\right)'= \\left(");
 
     Print (node->right, file);
-    fprintf (file, "\\right)' \\cdot \\cos{");
+    fprintf (file, "\\right)' \\cdot \\cos{\\left(");
     Print (node->right, file);
-    fprintf (file, "}\n\\end{equation}\n");
+    fprintf (file, "\\right)}\n\\end{equation}\n");
 }
 
 void LnTex (Node_t* node, FILE* file)

@@ -34,6 +34,8 @@ void TreeCtor (Tree_t* tree, const char* name_file)
     assert (tree);
     assert (name_file);
 
+    system ("mkdir -p " DIR);
+
     tree->input = fopen (name_file, "rb");
     ReadDataBase (tree);
     fclose (tree->input);
@@ -91,29 +93,46 @@ void Print (Node_t* node, FILE* file)
         {
             case F_ADD:
             {
-                fprintf (file, "\\left(");
+                // fprintf (file, "\\left(");
                 Print (node->left, file);
                 fprintf (file, "+");
                 Print (node->right, file);
-                fprintf (file, "\\right)");
+                // fprintf (file, "\\right)");
                 break;
             }
             case F_SUB:
             {
-                fprintf (file, "\\left(");
+                // fprintf (file, "\\left(");
                 Print (node->left, file);
                 fprintf (file, "-");
                 Print (node->right, file);
-                fprintf (file, "\\right)");
+                // fprintf (file, "\\right)");
                 break;
             }
             case F_MUL:
             {
                 // printf ("\\left(");
-                Print (node->left, file);
+                if ((int) node->left->value == F_ADD || (int) node->left->value == F_SUB)
+                {
+                    fprintf (file, "\\left(");
+                    Print (node->left, file);
+                    fprintf (file, "\\right)");
+                }
+                else
+                {
+                    Print (node->left, file);
+                }
                 fprintf (file, " \\cdot ");
-                Print (node->right, file);
-                // printf ("\\right)");
+                if ((int) node->right->value == F_ADD || (int) node->right->value == F_SUB)
+                {
+                    fprintf (file, "\\left(");
+                    Print (node->right, file);
+                    fprintf (file, "\\right)");
+                }
+                else
+                {
+                    Print (node->right, file);
+                }                
                 break;
             }
             case F_DIV:
@@ -164,11 +183,21 @@ void Print (Node_t* node, FILE* file)
             }
             case F_DEG:
             {
-                fprintf (file, "\\left(");
-                Print (node->left, file);
-                fprintf (file, "\\right)^{");
-                Print (node->right, file);
-                fprintf (file, "}");
+                if (node->left->type == NUM || node->left->type == VAR)
+                {
+                    Print (node->left, file);
+                    fprintf (file, "^{");
+                    Print (node->right, file);
+                    fprintf (file, "}");
+                }
+                else
+                {
+                    fprintf (file, "\\left(");
+                    Print (node->left, file);
+                    fprintf (file, "\\right)^{");
+                    Print (node->right, file);
+                    fprintf (file, "}");
+                }
                 break;
             }
             default:
